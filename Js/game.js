@@ -169,6 +169,7 @@ window.evaluarOpcionesDeTurno = function() {
     if (!miTurno || !pantallaJuego.classList.contains('activa')) return;
 
     let tieneJugada = false;
+    let tieneCartaMuerta = false; // NUEVO: Evaluamos si tiene cartas muertas
     const casillas = document.querySelectorAll('.casilla');
     
     if (manoPropia && manoPropia.length > 0) {
@@ -179,9 +180,14 @@ window.evaluarOpcionesDeTurno = function() {
             }
             
             let espaciosLibres = false;
+            let posicionesTotales = 0;
+            let posicionesOcupadas = 0;
+
             casillas.forEach(c => {
-                if (c.dataset.carta === carta && !c.querySelector('.ficha')) {
-                    espaciosLibres = true;
+                if (c.dataset.carta === carta) {
+                    posicionesTotales++;
+                    if (!c.querySelector('.ficha')) espaciosLibres = true;
+                    else posicionesOcupadas++;
                 }
             });
             
@@ -189,13 +195,23 @@ window.evaluarOpcionesDeTurno = function() {
                 tieneJugada = true;
                 break;
             }
+
+            // Si no hay espacios libres, pero la carta existe en el tablero, es muerta
+            if (!espaciosLibres && posicionesTotales > 0 && posicionesTotales === posicionesOcupadas) {
+                tieneCartaMuerta = true;
+            }
         }
     }
 
     const btnPasar = document.getElementById('btn-pasar-turno');
-    if (!tieneJugada) {
+    
+    // NUEVA LÓGICA: Decide qué mensaje dar
+    if (!tieneJugada && !tieneCartaMuerta) {
         btnPasar.classList.remove('oculta');
         mostrarToast("No tienes jugadas posibles. Debes pasar tu turno.", "warning", 5000);
+    } else if (!tieneJugada && tieneCartaMuerta) {
+        btnPasar.classList.add('oculta');
+        mostrarToast("Estás bloqueado, pero puedes DESCARTAR una carta muerta para robar.", "info", 5000);
     } else {
         btnPasar.classList.add('oculta');
     }
@@ -292,14 +308,21 @@ function actualizarManoTrasJugada(mensajeHistorial) {
     registrarAccion(mensajeHistorial);
     baseDatos.ref('sala_activa/estado/turnosPasados').set(0); 
 
+    let cartaExtraidaSegura = null; // Variable trampa para evitar clones
+
     baseDatos.ref('sala_activa/mazo').transaction((mazoActual) => {
         if (mazoActual && mazoActual.length > 0) {
-            let cartaRobada = mazoActual.pop();
-            manoPropia.push(cartaRobada);
+            cartaExtraidaSegura = mazoActual[mazoActual.length - 1]; // Tomamos la última
+            mazoActual.pop(); // La quitamos del mazo
             return mazoActual;
         }
         return mazoActual || [];
-    }).then(() => {
+    }).then((resultado) => {
+        // Solo inyectamos la carta SI la transacción fue exitosa
+        if (resultado.committed && cartaExtraidaSegura) {
+            manoPropia.push(cartaExtraidaSegura);
+        }
+        
         miJugadorRef.child('mano').set(manoPropia).then(() => {
             pasarTurno();
         });
@@ -393,14 +416,20 @@ function descartarYRobarSinPasarTurno(cartaDescartada) {
     let cartaTraducida = traducirCartaAIcono(cartaDescartada);
     registrarAccion(`🗑️ ${nombreColor} descartó un ${cartaTraducida} muerto.`);
 
+    let cartaExtraidaSegura = null;
+
     baseDatos.ref('sala_activa/mazo').transaction((mazoActual) => {
         if (mazoActual && mazoActual.length > 0) {
-            let cartaRobada = mazoActual.pop();
-            manoPropia.push(cartaRobada);
+            cartaExtraidaSegura = mazoActual[mazoActual.length - 1];
+            mazoActual.pop();
             return mazoActual;
         }
         return mazoActual || [];
-    }).then(() => {
+    }).then((resultado) => {
+        if (resultado.committed && cartaExtraidaSegura) {
+            manoPropia.push(cartaExtraidaSegura);
+        }
+
         miJugadorRef.child('mano').set(manoPropia).then(() => {
             renderizarMano();
             setTimeout(evaluarOpcionesDeTurno, 500); 
