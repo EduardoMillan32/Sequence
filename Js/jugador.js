@@ -1,43 +1,59 @@
 // Js/jugador.js
 
 let manoPropia = [];
-let cartaSeleccionadaIdx = null; 
+let cartaSeleccionadaIdx = null;
 const contenedorMano = document.getElementById('contenedor-cartas');
 
+/**
+ * Convierte un código de carta interno al código de la API de deckofcardsapi.com.
+ *   "10S" → "0S"   (los dieces usan "0" en la API)
+ *   "J1S" → "JS"   (Jacks especiales: quitamos el número del tipo)
+ *   "J2H" → "JH"
+ *   "AS"  → "AS"   (resto sin cambios)
+ */
+function cartaManoACodigoAPI(carta) {
+    if (carta.startsWith("10")) {
+        return "0" + carta.slice(2);   // "10S" → "0S"
+    }
+    if (carta.startsWith("J")) {
+        // "J1S" → "JS", "J2H" → "JH"
+        return "J" + carta.slice(2);
+    }
+    return carta;
+}
+
+// ============================================
+// INICIALIZAR MANO DESDE FIREBASE
+// ============================================
 function inicializarManoFirebase() {
     miJugadorRef.child('mano').on('value', (snapshot) => {
-        if(snapshot.exists()) {
-            manoPropia = snapshot.val();
-        } else {
-            manoPropia = [];
-        }
-        renderizarMano(); 
+        manoPropia = snapshot.exists() ? snapshot.val() : [];
+        renderizarMano();
     });
 }
 
+// ============================================
+// RENDERIZAR CARTAS EN MANO
+// ============================================
 function renderizarMano() {
     contenedorMano.innerHTML = "";
-    
+
     manoPropia.forEach((carta, index) => {
         const contenedorCarta = document.createElement('div');
-        contenedorCarta.classList.add('contenedor-carta-individual'); 
+        contenedorCarta.classList.add('contenedor-carta-individual');
 
         const imgCarta = document.createElement('img');
-        
-        let codigoAPI = carta;
-        if (carta.startsWith("10")) codigoAPI = "0" + carta[2];
-        if (carta.startsWith("J")) codigoAPI = carta.substring(0, 1) + carta.substring(2);
-
-        imgCarta.src = `https://deckofcardsapi.com/static/img/${codigoAPI}.png`;
-        imgCarta.classList.add('carta-mano');
-        
-        imgCarta.loading = 'lazy'; 
+        imgCarta.src       = `https://deckofcardsapi.com/static/img/${cartaManoACodigoAPI(carta)}.png`;
+        imgCarta.alt       = carta;
+        imgCarta.loading   = 'lazy';
         imgCarta.draggable = false;
-        
+        imgCarta.classList.add('carta-mano');
+
         if (index === cartaSeleccionadaIdx) {
             imgCarta.classList.add('carta-seleccionada');
         }
 
+        // Etiqueta visual para Jacks especiales
         if (carta.startsWith("J1")) {
             const etiqueta = document.createElement('span');
             etiqueta.innerText = "➕ 2 OJOS";
@@ -51,35 +67,43 @@ function renderizarMano() {
         }
 
         imgCarta.onclick = () => seleccionarCarta(index);
-        
+
         contenedorCarta.appendChild(imgCarta);
         contenedorMano.appendChild(contenedorCarta);
     });
 }
 
+// ============================================
+// SELECCIONAR / DESELECCIONAR CARTA
+// ============================================
 function seleccionarCarta(index) {
     cartaSeleccionadaIdx = (cartaSeleccionadaIdx === index) ? null : index;
     renderizarMano();
 }
 
-window.abrirReglas = function() {
+// ============================================
+// MODAL DE REGLAS
+// ============================================
+window.abrirReglas = function () {
     document.getElementById('regla-victoria-dinamica').innerText = configuracionJuego.sequencesParaGanar;
     document.getElementById('modal-reglas').classList.remove('oculta-modal');
     document.getElementById('modal-reglas').style.display = 'flex';
 };
 
-window.cerrarReglas = function() {
+window.cerrarReglas = function () {
     document.getElementById('modal-reglas').classList.add('oculta-modal');
     document.getElementById('modal-reglas').style.display = 'none';
 };
 
-// NUEVO: Funciones para controlar el Modal del Historial
-window.abrirHistorial = function() {
+// ============================================
+// MODAL DE HISTORIAL
+// ============================================
+window.abrirHistorial = function () {
     document.getElementById('modal-historial').classList.remove('oculta-modal');
     document.getElementById('modal-historial').style.display = 'flex';
 };
 
-window.cerrarHistorial = function() {
+window.cerrarHistorial = function () {
     document.getElementById('modal-historial').classList.add('oculta-modal');
     document.getElementById('modal-historial').style.display = 'none';
 };

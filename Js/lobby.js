@@ -5,77 +5,120 @@ let miJugadorRef = null;
 let miJugador = { nombre: "", color: null, listo: false };
 let jugadoresEnSala = [];
 let juegoIniciadoVisualmente = false;
-let partidaIniciada = false; 
+let partidaIniciada = false;
 
-const salaRef = baseDatos.ref('sala_activa/jugadores');
+const salaRef        = baseDatos.ref('sala_activa/jugadores');
 const estadoJuegoRef = baseDatos.ref('sala_activa/estado');
-
-const pantallaLogin = document.getElementById('pantalla-login');
-const pantallaLobby = document.getElementById('pantalla-lobby');
-const pantallaJuego = document.getElementById('pantalla-juego');
-const btnListo = document.getElementById('btn-listo');
-const mensajeValidacion = document.getElementById('mensaje-validacion');
 const nombresEquiposRef = baseDatos.ref('sala_activa/nombresEquipos');
+
+const pantallaLogin  = document.getElementById('pantalla-login');
+const pantallaLobby  = document.getElementById('pantalla-lobby');
+const pantallaJuego  = document.getElementById('pantalla-juego');
+const btnListo       = document.getElementById('btn-listo');
+const mensajeValidacion = document.getElementById('mensaje-validacion');
+
 let nombresEquipos = { rojo: "Rojo", azul: "Azul", verde: "Verde" };
 
+// ============================================
+// LISTENER: Nombres de equipos
+// ============================================
 nombresEquiposRef.on('value', (snapshot) => {
-    if (snapshot.exists()) {
-        nombresEquipos = snapshot.val();
-    } else {
-        nombresEquipos = { rojo: "Rojo", azul: "Azul", verde: "Verde" };
-    }
-    
+    nombresEquipos = snapshot.exists()
+        ? snapshot.val()
+        : { rojo: "Rojo", azul: "Azul", verde: "Verde" };
+
     const spanEditable = document.getElementById('nombre-editable');
     if (spanEditable && miJugador.color && nombresEquipos[miJugador.color]) {
+        // Solo actualiza si el usuario no está editando activamente
         if (document.activeElement !== spanEditable) {
             spanEditable.innerText = nombresEquipos[miJugador.color];
         }
     }
 });
 
+// ============================================
+// ENTRADA AL LOBBY
+// ============================================
 function entrarLobby() {
     const nombre = document.getElementById('input-nombre').value.trim();
     if (nombre === "") return mostrarToast("Por favor ingresa un nombre válido.", "warning");
-    
-    miJugador.nombre = nombre;
-    miJugadorRef = salaRef.push(); 
-    miJugadorId = miJugadorRef.key; 
-    miJugadorRef.set(miJugador);
-    miJugadorRef.onDisconnect().remove().then(() => {
-        baseDatos.ref('sala_activa/estado').onDisconnect().update({
-            abandonado: true,
-            nombreAbandono: miJugador.nombre
-        });
-    });
 
-    pantallaLogin.classList.remove('activa');
-    pantallaLogin.classList.add('oculta');
-    pantallaLobby.classList.remove('oculta');
-    pantallaLobby.classList.add('activa');
+    miJugador.nombre = nombre;
+
+    // ── ANTI-DUPLICADO ──────────────────────────────────────────────
+    // Si este dispositivo ya tenía una sesión activa (por recarga o
+    // cierre inesperado), eliminamos esa entrada antes de crear una nueva.
+    const idAnterior = localStorage.getItem('sequence_jugador_id');
+    const promesaLimpieza = idAnterior
+        ? salaRef.child(idAnterior).remove()   // borra la entrada huérfana
+        : Promise.resolve();
+    // ────────────────────────────────────────────────────────────────
+
+    promesaLimpieza.then(() => {
+        // Crear nueva entrada en Firebase
+        miJugadorRef = salaRef.push();
+        miJugadorId  = miJugadorRef.key;
+
+        // Persistir el ID en este dispositivo para poder limpiar en el futuro
+        localStorage.setItem('sequence_jugador_id', miJugadorId);
+
+        miJugadorRef.set(miJugador);
+
+        // Limpieza automática al desconectarse (Firebase onDisconnect)
+        miJugadorRef.onDisconnect().remove().then(() => {
+            estadoJuegoRef.onDisconnect().update({
+                abandonado: true,
+                nombreAbandono: miJugador.nombre
+            });
+        });
+
+        pantallaLogin.classList.remove('activa');
+        pantallaLogin.classList.add('oculta');
+        pantallaLobby.classList.remove('oculta');
+        pantallaLobby.classList.add('activa');
+    }).catch(() => {
+        // Si falla la limpieza (ej: sin permisos), entramos igual
+        miJugadorRef = salaRef.push();
+        miJugadorId  = miJugadorRef.key;
+        localStorage.setItem('sequence_jugador_id', miJugadorId);
+        miJugadorRef.set(miJugador);
+        miJugadorRef.onDisconnect().remove();
+
+        pantallaLogin.classList.remove('activa');
+        pantallaLogin.classList.add('oculta');
+        pantallaLobby.classList.remove('oculta');
+        pantallaLobby.classList.add('activa');
+    });
 }
 
+// ============================================
+// SELECCIÓN DE COLOR / EQUIPO
+// ============================================
 function seleccionarColor(color) {
     miJugador.color = color;
-    btnListo.disabled = false; 
-    
+    btnListo.disabled = false;
+
     const nombreDefault = color.charAt(0).toUpperCase() + color.slice(1);
     const nombreMostrar = nombresEquipos[color] || nombreDefault;
 
     const titulo = document.getElementById('titulo-equipo');
     titulo.innerHTML = `Equipo: <span id="nombre-editable" contenteditable="true" spellcheck="false" style="outline: none;">${nombreMostrar}</span>`;
-    
-    const spanEditable = document.getElementById('nombre-editable');
-    spanEditable.addEventListener('input', function() {
+
+    // Adjuntar listener al nuevo span creado
+    document.getElementById('nombre-editable').addEventListener('input', function () {
         cambiarNombreEquipo(this.innerText);
     });
 
     document.querySelectorAll('.btn-color').forEach(btn => btn.classList.remove('color-activo'));
-    document.querySelector('.btn-color.' + color).classList.add('color-activo');
+    document.querySelector(`.btn-color.${color}`).classList.add('color-activo');
 
     if (miJugadorRef) miJugadorRef.set(miJugador);
-    actualizarVistaLobby(); 
+    actualizarVistaLobby();
 }
 
+// ============================================
+// BOTÓN LISTO
+// ============================================
 function alternarListo() {
     miJugador.listo = !miJugador.listo;
     btnListo.innerText = miJugador.listo ? "Esperando a los demás..." : "Estoy Listo";
@@ -83,215 +126,238 @@ function alternarListo() {
     if (miJugadorRef) miJugadorRef.set(miJugador);
 }
 
+// ============================================
+// LISTENER: Jugadores en sala
+// ============================================
 salaRef.on('value', (snapshot) => {
-    jugadoresEnSala = []; 
+    jugadoresEnSala = [];
     const datos = snapshot.val();
-    
+
     if (datos) {
         Object.keys(datos).forEach(key => {
-            let jugador = datos[key];
+            const jugador = datos[key];
             if (jugador && jugador.nombre && jugador.nombre !== "undefined") {
-                jugador.id = key; 
+                jugador.id = key;
                 jugadoresEnSala.push(jugador);
             }
         });
     } else {
+        // No hay jugadores: limpiar estado de partida
         estadoJuegoRef.set(null);
-        partidaIniciada = false; 
+        partidaIniciada = false;
     }
 
+    // Si soy el único jugador, limpio toda la sala para empezar fresco
     if (jugadoresEnSala.length === 1 && jugadoresEnSala[0].id === miJugadorId) {
-        nombresEquiposRef.remove(); 
-        estadoJuegoRef.set(null);   
-        tableroRef.set(null);       
-        baseDatos.ref('sala_activa/mazo').remove(); 
+        nombresEquiposRef.remove();
+        estadoJuegoRef.set(null);
+        // tableroRef se define en game.js; usamos la referencia directa para evitar dependencia de orden
+        baseDatos.ref('sala_activa/tablero').set(null);
+        baseDatos.ref('sala_activa/mazo').remove();
     }
-    
+
     actualizarVistaLobby();
-    verificarReglasParaIniciar(); 
+    verificarReglasParaIniciar();
 });
 
+// ============================================
+// VISTA DEL LOBBY
+// ============================================
 function actualizarVistaLobby() {
     const lista = document.getElementById('lista-jugadores');
     lista.innerHTML = "";
+
     jugadoresEnSala.forEach(jugador => {
         const li = document.createElement('li');
         let colorPublico = 'Pensando...';
-        if (jugador.color === 'rojo') colorPublico = '🔴 Rojo';
-        if (jugador.color === 'azul') colorPublico = '🔵 Azul';
+        if (jugador.color === 'rojo')  colorPublico = '🔴 Rojo';
+        if (jugador.color === 'azul')  colorPublico = '🔵 Azul';
         if (jugador.color === 'verde') colorPublico = '🟢 Verde';
 
-        li.innerText = `${jugador.nombre} - Equipo: ${colorPublico} - ${jugador.listo ? '✅ LISTO' : '⏳ Esperando'}`;
+        li.innerText = `${jugador.nombre} — Equipo: ${colorPublico} — ${jugador.listo ? '✅ LISTO' : '⏳ Esperando'}`;
         lista.appendChild(li);
     });
 }
 
+// ============================================
+// VERIFICACIÓN DE REGLAS PARA INICIAR
+// ============================================
 function verificarReglasParaIniciar() {
-    if (partidaIniciada) return; 
+    if (partidaIniciada) return;
 
     const totalJugadores = jugadoresEnSala.length;
     if (totalJugadores === 0) return;
 
+    // Todos deben estar listos
     const todosListos = jugadoresEnSala.every(j => j.listo);
     if (!todosListos) {
         mensajeValidacion.innerText = "Faltan jugadores por confirmar.";
         return;
     }
 
-    let conteo = { rojo: 0, azul: 0, verde: 0 };
-    jugadoresEnSala.forEach(j => { if(j.color) conteo[j.color]++; });
-    const equiposActivos = Object.values(conteo).filter(cantidad => cantidad > 0);
-    const numEquipos = equiposActivos.length;
-    
+    // Contar jugadores por equipo
+    const conteo = { rojo: 0, azul: 0, verde: 0 };
+    jugadoresEnSala.forEach(j => { if (j.color) conteo[j.color]++; });
+
+    const cantidades = Object.values(conteo).filter(c => c > 0);
+    const numEquipos = cantidades.length;
+
     let juegoValido = false;
+
     if (numEquipos === 2) {
-        if (totalJugadores % 2 === 0 && equiposActivos[0] === equiposActivos[1]) juegoValido = true;
-        else mensajeValidacion.innerText = "Para 2 equipos, deben ser pares y estar equilibrados.";
+        if (totalJugadores % 2 === 0 && cantidades[0] === cantidades[1]) {
+            juegoValido = true;
+        } else {
+            mensajeValidacion.innerText = "Para 2 equipos, deben ser pares y estar equilibrados.";
+        }
     } else if (numEquipos === 3) {
-        if (totalJugadores % 3 === 0 && equiposActivos[0] === equiposActivos[1] && equiposActivos[1] === equiposActivos[2]) juegoValido = true;
-        else mensajeValidacion.innerText = "Para 3 equipos, deben tener la misma cantidad.";
+        if (totalJugadores % 3 === 0 && cantidades[0] === cantidades[1] && cantidades[1] === cantidades[2]) {
+            juegoValido = true;
+        } else {
+            mensajeValidacion.innerText = "Para 3 equipos, deben tener la misma cantidad de jugadores.";
+        }
     } else {
         mensajeValidacion.innerText = "Debe haber al menos 2 equipos para jugar.";
     }
 
-    if (juegoValido) {
-        mensajeValidacion.innerText = "¡Todo listo! Iniciando partida...";
-        
-        if (jugadoresEnSala[0].id === miJugadorId) {
-            partidaIniciada = true; 
-            tableroRef.set(null); 
-            
-            let verdes = jugadoresEnSala.filter(j => j.color === 'verde');
-            let azules = jugadoresEnSala.filter(j => j.color === 'azul');
-            let rojos = jugadoresEnSala.filter(j => j.color === 'rojo');
-            
-            let ordenTurnos = [];
-            let maxPorEquipo = Math.max(verdes.length, azules.length, rojos.length);
-            
-            for (let i = 0; i < maxPorEquipo; i++) {
-                if (verdes[i]) ordenTurnos.push(verdes[i].id);
-                if (azules[i]) ordenTurnos.push(azules[i].id);
-                if (rojos[i]) ordenTurnos.push(rojos[i].id);
-            }
+    if (!juegoValido) return;
 
-            let indiceAleatorio = Math.floor(Math.random() * ordenTurnos.length);
-            let primerTurnoId = ordenTurnos[indiceAleatorio];
+    mensajeValidacion.innerText = "¡Todo listo! Iniciando partida...";
 
-            inicializarReglas(totalJugadores, numEquipos);
-            let mazoMaestro = obtenerMazoBarajado(); 
+    // Solo el primer jugador (anfitrión) inicializa la partida en Firebase
+    if (jugadoresEnSala[0].id === miJugadorId) {
+        partidaIniciada = true;
+        baseDatos.ref('sala_activa/tablero').set(null);
 
-            jugadoresEnSala.forEach(jugador => {
-                let mano = [];
-                for(let i = 0; i < configuracionJuego.cartasPorJugador; i++) {
-                    mano.push(mazoMaestro.pop()); 
-                }
-                baseDatos.ref(`sala_activa/jugadores/${jugador.id}`).update({ mano: mano });
-            });
+        // Construir orden de turnos intercalando equipos
+        const verdes = jugadoresEnSala.filter(j => j.color === 'verde');
+        const azules  = jugadoresEnSala.filter(j => j.color === 'azul');
+        const rojos   = jugadoresEnSala.filter(j => j.color === 'rojo');
 
-            baseDatos.ref('sala_activa/mazo').set(mazoMaestro);
-            
-            // NUEVO: Instanciamos variables de Empate e Historial
-            estadoJuegoRef.set({
-                iniciado: true,
-                jugadoresTotales: totalJugadores,
-                equiposTotales: numEquipos,
-                turnoActual: primerTurnoId,
-                ordenTurnos: ordenTurnos,
-                marcaTiempo: Date.now(),
-                turnosPasados: 0,
-                empate: false,
-                historial: { 0: "🎮 <b>¡La partida ha comenzado!</b>" }
-            });
+        const ordenTurnos = [];
+        const maxPorEquipo = Math.max(verdes.length, azules.length, rojos.length);
+        for (let i = 0; i < maxPorEquipo; i++) {
+            if (verdes[i]) ordenTurnos.push(verdes[i].id);
+            if (azules[i])  ordenTurnos.push(azules[i].id);
+            if (rojos[i])   ordenTurnos.push(rojos[i].id);
         }
+
+        const indiceAleatorio = Math.floor(Math.random() * ordenTurnos.length);
+        const primerTurnoId   = ordenTurnos[indiceAleatorio];
+
+        inicializarReglas(totalJugadores, numEquipos);
+        const mazoMaestro = obtenerMazoBarajado();
+
+        // Repartir cartas a cada jugador
+        jugadoresEnSala.forEach(jugador => {
+            const mano = [];
+            for (let i = 0; i < configuracionJuego.cartasPorJugador; i++) {
+                mano.push(mazoMaestro.pop());
+            }
+            baseDatos.ref(`sala_activa/jugadores/${jugador.id}`).update({ mano });
+        });
+
+        baseDatos.ref('sala_activa/mazo').set(mazoMaestro);
+
+        estadoJuegoRef.set({
+            iniciado: true,
+            jugadoresTotales: totalJugadores,
+            equiposTotales: numEquipos,
+            turnoActual: primerTurnoId,
+            ordenTurnos: ordenTurnos,
+            marcaTiempo: Date.now(),
+            turnosPasados: 0,
+            empate: false,
+            historial: { 0: "🎮 <b>¡La partida ha comenzado!</b>" }
+        });
     }
 }
 
+// ============================================
+// LISTENER: Estado del juego
+// ============================================
 estadoJuegoRef.on('value', (snapshot) => {
     const estado = snapshot.val();
-    if (miJugador.nombre === "") return; 
+    if (miJugador.nombre === "") return;
 
-    const bloqueCartas = document.getElementById('interfaz-cartas');
+    const bloqueCartas   = document.getElementById('interfaz-cartas');
     const bloqueVictoria = document.getElementById('interfaz-victoria-mano');
 
+    // --- Jugador abandonó ---
     if (estado && estado.abandonado) {
         bloqueCartas.classList.add('oculta');
         bloqueVictoria.classList.remove('oculta');
-        
-        document.getElementById('texto-victoria-mano').innerText = `PARTIDA TERMINADA: ${estado.nombreAbandono} abandonó la sala. 🚪`;
+        document.getElementById('texto-victoria-mano').innerText =
+            `PARTIDA TERMINADA: ${estado.nombreAbandono} abandonó la sala. 🚪`;
         document.getElementById('texto-victoria-mano').style.color = "#f1c40f";
-        
         const btnRevancha = document.getElementById('btn-revancha');
         btnRevancha.innerText = "Volver al Lobby principal";
-        btnRevancha.disabled = false; 
+        btnRevancha.disabled = false;
         return;
     }
 
-    // NUEVO: Condición de Empate
+    // --- Empate técnico ---
     if (estado && estado.empate) {
         bloqueCartas.classList.add('oculta');
         bloqueVictoria.classList.remove('oculta');
-        
         const textoWin = document.getElementById('texto-victoria-mano');
-        textoWin.innerText = `¡EMPATE TÉCNICO! 🤝`;
-        textoWin.style.color = "#bdc3c7"; // Letras plateadas
-        
+        textoWin.innerText = "¡EMPATE TÉCNICO! 🤝";
+        textoWin.style.color = "#bdc3c7";
         const btnRevancha = document.getElementById('btn-revancha');
-        if (jugadoresEnSala[0].id !== miJugadorId) {
-            btnRevancha.innerText = "Esperando al anfitrión...";
-            btnRevancha.disabled = true;
-        } else {
-            btnRevancha.innerText = "Volver al Lobby 🔄";
-            btnRevancha.disabled = false;
-        }
+        const esAnfitrion = jugadoresEnSala.length > 0 && jugadoresEnSala[0].id === miJugadorId;
+        btnRevancha.innerText  = esAnfitrion ? "Volver al Lobby 🔄" : "Esperando al anfitrión...";
+        btnRevancha.disabled   = !esAnfitrion;
         return;
     }
-    
+
+    // --- Sin estado o partida no iniciada: volver al lobby ---
     if (!estado || !estado.iniciado) {
         if (juegoIniciadoVisualmente) {
             juegoIniciadoVisualmente = false;
             partidaIniciada = false;
-            
+
             bloqueCartas.classList.remove('oculta');
             bloqueVictoria.classList.add('oculta');
-            
+
             pantallaJuego.classList.remove('activa');
             pantallaJuego.classList.add('oculta');
             pantallaLobby.classList.remove('oculta');
             pantallaLobby.classList.add('activa');
-            
+
+            // Resetear estado del botón listo
+            miJugador.listo = false;
+            btnListo.innerText = "Estoy Listo";
+            btnListo.style.backgroundColor = "";
             if (miJugadorRef) miJugadorRef.update({ listo: false });
         }
         return;
     }
 
+    // --- Victoria ---
     if (estado.victoria) {
         bloqueCartas.classList.add('oculta');
         bloqueVictoria.classList.remove('oculta');
-        
         const nombreGanador = nombresEquipos[estado.victoria] || estado.victoria;
         const textoWin = document.getElementById('texto-victoria-mano');
         textoWin.innerText = `¡GANA EL EQUIPO ${nombreGanador.toUpperCase()}! 🎉`;
-        textoWin.style.color = "#f1c40f"; // Color dorado
-        
+        textoWin.style.color = "#f1c40f";
         const btnRevancha = document.getElementById('btn-revancha');
-        if (jugadoresEnSala[0].id !== miJugadorId) {
-            btnRevancha.innerText = "Esperando al anfitrión...";
-            btnRevancha.disabled = true;
-        } else {
-            btnRevancha.innerText = "Volver al Lobby 🔄";
-            btnRevancha.disabled = false;
-        }
-        return; 
+        const esAnfitrion = jugadoresEnSala.length > 0 && jugadoresEnSala[0].id === miJugadorId;
+        btnRevancha.innerText = esAnfitrion ? "Volver al Lobby 🔄" : "Esperando al anfitrión...";
+        btnRevancha.disabled  = !esAnfitrion;
+        return;
     }
-    
+
+    // --- Partida iniciada: transición a pantalla de juego ---
     if (estado.iniciado === true && !juegoIniciadoVisualmente) {
-        partidaIniciada = true; 
+        partidaIniciada = true;
         juegoIniciadoVisualmente = true;
-        reiniciarEstadoJuegoLocal(); 
+        reiniciarEstadoJuegoLocal();
         inicializarReglas(estado.jugadoresTotales, estado.equiposTotales);
         inicializarManoFirebase();
 
         setTimeout(() => {
+            pantallaLobby.classList.remove('activa');
             pantallaLobby.classList.add('oculta');
             pantallaJuego.classList.remove('oculta');
             pantallaJuego.classList.add('activa');
@@ -299,19 +365,39 @@ estadoJuegoRef.on('value', (snapshot) => {
     }
 });
 
-window.volverAlLobby = function() {
-    if (jugadoresEnSala[0].id === miJugadorId) {
-        estadoJuegoRef.set(null); 
-        tableroRef.set(null);
-        nombresEquiposRef.remove();
-        baseDatos.ref('sala_activa/mazo').set(null);
-        jugadoresEnSala.forEach(j => {
-             baseDatos.ref(`sala_activa/jugadores/${j.id}/mano`).remove();
-        });
-    }
-}
+// ============================================
+// VOLVER AL LOBBY (solo el anfitrión)
+// ============================================
+window.volverAlLobby = function () {
+    if (jugadoresEnSala.length === 0 || jugadoresEnSala[0].id !== miJugadorId) return;
 
-window.cambiarNombreEquipo = function(nuevoNombre) {
+    estadoJuegoRef.set(null);
+    baseDatos.ref('sala_activa/tablero').set(null);
+    nombresEquiposRef.remove();
+    baseDatos.ref('sala_activa/mazo').set(null);
+    jugadoresEnSala.forEach(j => {
+        baseDatos.ref(`sala_activa/jugadores/${j.id}/mano`).remove();
+    });
+};
+
+// ============================================
+// LIMPIEZA AL CERRAR / RECARGAR LA PÁGINA
+// Garantiza que el jugador se elimine de Firebase
+// incluso si onDisconnect no alcanza a ejecutarse.
+// ============================================
+window.addEventListener('beforeunload', () => {
+    // Eliminación síncrona (best-effort) al cerrar la pestaña
+    if (miJugadorRef) {
+        miJugadorRef.remove();
+    }
+    // Limpiar el ID guardado para que la próxima sesión empiece limpia
+    localStorage.removeItem('sequence_jugador_id');
+});
+
+// ============================================
+// CAMBIAR NOMBRE DE EQUIPO
+// ============================================
+window.cambiarNombreEquipo = function (nuevoNombre) {
     if (!miJugador.color || nuevoNombre.trim() === "") return;
     nombresEquiposRef.child(miJugador.color).set(nuevoNombre.trim());
 };

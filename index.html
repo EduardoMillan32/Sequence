@@ -4,16 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Sequence: Multijugador</title>
-    
+
     <link rel="stylesheet" href="css/general.css">
     <link rel="stylesheet" href="css/lobby.css">
     <link rel="stylesheet" href="css/tablero.css">
     <link rel="stylesheet" href="css/jugador.css">
 </head>
 <body>
-    
+
+    <!-- Contenedor de notificaciones toast -->
     <div id="contenedor-toast"></div>
 
+    <!-- ===== PANTALLA: LOGIN ===== -->
     <div id="pantalla-login" class="pantalla activa">
         <h1>Sequence 🃏</h1>
         <div class="caja-formulario">
@@ -23,6 +25,7 @@
         </div>
     </div>
 
+    <!-- ===== PANTALLA: LOBBY ===== -->
     <div id="pantalla-lobby" class="pantalla oculta">
         <h1>Sala de Espera ⏳</h1>
         <div class="caja-lobby">
@@ -31,8 +34,8 @@
 
             <h3 id="titulo-equipo">Elige tu equipo</h3>
             <div class="seleccion-equipo">
-                <button class="btn-color rojo" onclick="seleccionarColor('rojo')">Rojo</button>
-                <button class="btn-color azul" onclick="seleccionarColor('azul')">Azul</button>
+                <button class="btn-color rojo"  onclick="seleccionarColor('rojo')">Rojo</button>
+                <button class="btn-color azul"  onclick="seleccionarColor('azul')">Azul</button>
                 <button class="btn-color verde" onclick="seleccionarColor('verde')">Verde</button>
             </div>
 
@@ -41,74 +44,88 @@
         </div>
     </div>
 
+    <!-- ===== PANTALLA: JUEGO ===== -->
     <div id="pantalla-juego" class="pantalla oculta">
         <div id="contenedor-juego">
             <div id="tablero" class="tablero"></div>
         </div>
 
+        <!-- Panel inferior: mano del jugador -->
         <div id="mano-jugador" class="mano">
+
+            <!-- Interfaz de juego activo -->
             <div id="interfaz-cartas">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; width: 100%;">
-                    
-                    <div style="display: flex; gap: 8px; align-items: center; flex: 1; justify-content: flex-start;">
-                        <span style="background: rgba(0,0,0,0.5); padding: 4px 8px; border-radius: 5px; font-size: 0.9rem; white-space: nowrap;">
-                            🎴 <strong id="contador-mazo" style="color: #f1c40f;">0</strong>
+                <div class="barra-superior-mano">
+
+                    <!-- Izquierda: contador de mazo + botón pasar -->
+                    <div class="barra-izquierda">
+                        <span class="contador-mazo-badge">
+                            🎴 <strong id="contador-mazo">0</strong>
                         </span>
-                        <button id="btn-pasar-turno" class="oculta" onclick="ejecutarPasoDeTurno()" style="background-color: #e67e22; color: white; padding: 4px 8px; font-size: 0.8rem; border-radius: 5px; border: none; cursor: pointer; white-space: nowrap;">
+                        <button id="btn-pasar-turno" class="oculta btn-pasar" onclick="ejecutarPasoDeTurno()">
                             Pasar ⏭️
                         </button>
                     </div>
-                    
-                    <h3 id="titulo-mano" style="margin: 0; flex: 1; text-align: center; white-space: nowrap;">Tu Mano</h3>
-                    
-                    <div style="display: flex; gap: 12px; align-items: center; flex: 1; justify-content: flex-end;">
-                        <span style="cursor: pointer; font-size: 1.5rem; text-shadow: 0 0 5px rgba(52, 152, 219, 0.8);" title="Ver Historial" onclick="abrirHistorial()">📜</span>
-                        <span style="cursor: pointer; font-size: 1.5rem; text-shadow: 0 0 5px rgba(241, 196, 15, 0.8);" title="Ver Reglas" onclick="abrirReglas()">ℹ️</span>
+
+                    <!-- Centro: título de mano -->
+                    <h3 id="titulo-mano">Tu Mano</h3>
+
+                    <!-- Derecha: iconos de historial y reglas -->
+                    <div class="barra-derecha">
+                        <span class="icono-accion icono-historial" title="Ver Historial" onclick="abrirHistorial()">📜</span>
+                        <span class="icono-accion icono-reglas"    title="Ver Reglas"    onclick="abrirReglas()">ℹ️</span>
                     </div>
 
                 </div>
-                
+
                 <div id="contenedor-cartas"></div>
                 <button id="btn-descartar" onclick="intentarDescartarCartaMuerta()">Descartar Carta Muerta 🗑️</button>
             </div>
 
-            <div id="interfaz-victoria-mano" class="oculta" style="text-align: center; padding: 10px;">
-                <h2 id="texto-victoria-mano" style="color: #f1c40f; margin-top: 0; font-size: 1.5rem;">¡VICTORIA!</h2>
-                <button id="btn-revancha" onclick="volverAlLobby()" style="background-color: #2ecc71; width: 100%;">Volver al Lobby 🔄</button>
+            <!-- Interfaz de victoria / fin de partida -->
+            <div id="interfaz-victoria-mano" class="oculta panel-victoria">
+                <h2 id="texto-victoria-mano">¡VICTORIA!</h2>
+                <button id="btn-revancha" onclick="volverAlLobby()">Volver al Lobby 🔄</button>
             </div>
+
         </div>
     </div>
 
-    <div id="modal-reglas" class="oculta-modal" style="display: none;">
+    <!-- ===== MODAL: REGLAS ===== -->
+    <div id="modal-reglas" class="oculta-modal">
         <div class="contenido-modal">
             <span class="cerrar-modal" onclick="cerrarReglas()">&times;</span>
-            <h2 style="color: #f1c40f;">📜 Reglas de Sequence</h2>
-            <ul style="text-align: left; line-height: 1.6; font-size: 1.1rem;">
-                <li><strong>Objetivo:</strong> Formar <span id="regla-victoria-dinamica" style="color:#2ecc71; font-weight:bold;">2</span> Sequence(s) de 5 fichas seguidas.</li>
-                <li><strong>Jacks de 2 Ojos:</strong> Comodines (Cualquier casilla libre).</li>
-                <li><strong>Jacks de 1 Ojo:</strong> Anticomodines (Quita ficha del rival).</li>
+            <h2 class="titulo-modal-reglas">📜 Reglas de Sequence</h2>
+            <ul class="lista-reglas">
+                <li><strong>Objetivo:</strong> Formar <span id="regla-victoria-dinamica" class="resaltado-verde">2</span> Sequence(s) de 5 fichas seguidas.</li>
+                <li><strong>Jacks de 2 Ojos:</strong> Comodines (cualquier casilla libre).</li>
+                <li><strong>Jacks de 1 Ojo:</strong> Anticomodines (quita ficha del rival).</li>
                 <li><strong>Esquinas ⭐:</strong> Sirven como una ficha para todos.</li>
-                <li><strong>Cartas Muertas 🗑️:</strong> Descartar y robar una nueva si sus casillas están ocupadas.</li>
-                <li><strong>Empate/Muerte Súbita:</strong> Si no quedan jugadas y el mazo está en 0, gana el equipo con más Sequences. Si están empatados a puntos, es empate técnico.</li>
+                <li><strong>Cartas Muertas 🗑️:</strong> Descarta y roba una nueva si sus casillas están ocupadas.</li>
+                <li><strong>Empate / Muerte Súbita:</strong> Si no quedan jugadas y el mazo está en 0, gana el equipo con más Sequences. Si están empatados, es empate técnico.</li>
             </ul>
         </div>
     </div>
 
-    <div id="modal-historial" class="oculta-modal" style="display: none;">
+    <!-- ===== MODAL: HISTORIAL ===== -->
+    <div id="modal-historial" class="oculta-modal">
         <div class="contenido-modal">
             <span class="cerrar-modal" onclick="cerrarHistorial()">&times;</span>
-            <h2 style="color: #3498db; margin-bottom: 15px;">📜 Historial de Jugadas</h2>
-            <ul id="lista-historial" style="list-style: none; padding: 0; margin: 0; max-height: 50vh; overflow-y: auto; text-align: left; font-size: 0.95rem;">
-                </ul>
+            <h2 class="titulo-modal-historial">📜 Historial de Jugadas</h2>
+            <ul id="lista-historial" class="lista-historial-items"></ul>
         </div>
     </div>
 
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+
+    <!-- Módulos del juego (orden de carga importa) -->
     <script src="Js/config.js"></script>
-    <script src="Js/lobby.js"></script> 
+    <script src="Js/lobby.js"></script>
     <script src="Js/tablero.js"></script>
     <script src="Js/game.js"></script>
     <script src="Js/jugador.js"></script>
+
 </body>
 </html>

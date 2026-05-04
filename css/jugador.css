@@ -1,6 +1,8 @@
 /* css/jugador.css */
 
-/* PANEL PRINCIPAL (Glassmorphism) */
+/* ============================================
+   PANEL PRINCIPAL (Glassmorphism)
+   ============================================ */
 .mano {
     position: fixed;
     bottom: 0;
@@ -9,14 +11,14 @@
     width: 100%;
     max-width: 680px;
 
-    background: rgba(26, 37, 47, 0.97) !important;
+    background: rgba(26, 37, 47, 0.97);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
 
     border: 2px solid #f1c40f;
     border-bottom: none;
     border-radius: 16px 16px 0 0;
-    box-shadow: 0 -5px 25px rgba(0,0,0,0.8);
+    box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.8);
     z-index: 1000;
 
     padding: 8px 12px 12px 12px;
@@ -30,24 +32,95 @@
     border-color: #2ecc71;
     box-shadow: 0 -5px 20px rgba(46, 204, 113, 0.3);
 }
+
 .mano.esperando-turno {
     border-color: #e74c3c;
-    box-shadow: 0 -5px 25px rgba(0,0,0,0.8);
+    box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.8);
 }
 
-.mano h3, .mano span { 
-    color: white; /* ¡QUITAMOS EL !important DE AQUÍ! */
-    font-family: sans-serif; 
-    margin: 0; 
+.mano h3,
+.mano span {
+    color: white;
+    font-family: sans-serif;
+    margin: 0;
 }
-.mano h3 { font-size: 0.85rem; text-align: center; transition: color 0.3s ease; }
 
-/* NUEVO: Clases para pintar el texto "¡ES TU TURNO!" */
-.turno-rojo { color: #e74c3c !important; text-shadow: 0 0 8px rgba(231, 76, 60, 0.8); font-weight: bold; }
-.turno-azul { color: #3498db !important; text-shadow: 0 0 8px rgba(52, 152, 219, 0.8); font-weight: bold; }
+.mano h3 {
+    font-size: 0.85rem;
+    text-align: center;
+    transition: color 0.3s ease;
+}
+
+/* Colores del título según turno */
+.turno-rojo  { color: #e74c3c !important; text-shadow: 0 0 8px rgba(231, 76, 60, 0.8);  font-weight: bold; }
+.turno-azul  { color: #3498db !important; text-shadow: 0 0 8px rgba(52, 152, 219, 0.8); font-weight: bold; }
 .turno-verde { color: #2ecc71 !important; text-shadow: 0 0 8px rgba(46, 204, 113, 0.8); font-weight: bold; }
 
-/* CONTENEDOR DE CARTAS */
+/* ============================================
+   BARRA SUPERIOR DE LA MANO
+   ============================================ */
+.barra-superior-mano {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+.barra-izquierda,
+.barra-derecha {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex: 1;
+}
+
+.barra-izquierda { justify-content: flex-start; }
+.barra-derecha   { justify-content: flex-end; gap: 12px; }
+
+/* Contador de cartas en el mazo */
+.contador-mazo-badge {
+    background: rgba(0, 0, 0, 0.5);
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    color: white;
+}
+
+.contador-mazo-badge strong {
+    color: #f1c40f;
+}
+
+/* Botón pasar turno */
+.btn-pasar {
+    background-color: #e67e22;
+    color: white;
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btn-pasar:hover {
+    background-color: #d35400;
+    box-shadow: none;
+}
+
+/* Iconos de acción (historial, reglas) */
+.icono-accion {
+    cursor: pointer;
+    font-size: 1.5rem;
+}
+
+.icono-historial { text-shadow: 0 0 5px rgba(52, 152, 219, 0.8); }
+.icono-reglas    { text-shadow: 0 0 5px rgba(241, 196, 15, 0.8); }
+
+/* ============================================
+   CONTENEDOR DE CARTAS
+   ============================================ */
 #contenedor-cartas {
     display: flex;
     flex-direction: row;
@@ -59,70 +132,190 @@
     padding: 5px 2px 8px 2px;
     box-sizing: border-box;
     scrollbar-width: none;
-    -webkit-overflow-scrolling: touch; 
+    -webkit-overflow-scrolling: touch;
 }
+
 #contenedor-cartas::-webkit-scrollbar { display: none; }
 
-.contenedor-carta-individual { position: relative; flex-shrink: 0; }
+.contenedor-carta-individual {
+    position: relative;
+    flex-shrink: 0;
+}
 
-/* LAS CARTAS */
+/* ============================================
+   CARTAS EN MANO
+   ============================================ */
 .carta-mano {
-    height: 70px; width: auto; cursor: pointer;
+    height: 70px;
+    width: auto;
+    cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s;
-    border-radius: 5px; flex-shrink: 0; border: 2px solid transparent;
+    border-radius: 5px;
+    flex-shrink: 0;
+    border: 2px solid transparent;
     -webkit-user-drag: none;
 }
-.carta-mano:hover { transform: translateY(-8px); box-shadow: 0 5px 12px rgba(0,0,0,0.5); }
+
+.carta-mano:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.5);
+}
+
 .carta-seleccionada {
-    border-color: #f1c40f !important; transform: translateY(-12px) !important;
+    border-color: #f1c40f !important;
+    transform: translateY(-12px) !important;
     box-shadow: 0 8px 20px rgba(241, 196, 15, 0.4) !important;
 }
 
-/* BOTÓN DESCARTAR */
+/* ============================================
+   BOTÓN DESCARTAR
+   ============================================ */
 #btn-descartar {
-    background-color: #c0392b; color: white !important; border: none;
-    padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer;
-    margin-top: 4px; font-size: 0.8rem; align-self: center; transition: background-color 0.2s;
+    background-color: #c0392b;
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 4px;
+    font-size: 0.8rem;
+    align-self: center;
+    transition: background-color 0.2s;
 }
-#btn-descartar:hover { background-color: #e74c3c; box-shadow: none; }
 
-/* ETIQUETAS JACKS */
-.etiqueta-jack {
-    position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
-    color: white !important; font-size: 0.6rem; font-weight: bold;
-    padding: 2px 5px; border-radius: 8px; white-space: nowrap; z-index: 15;
-    pointer-events: none; box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+#btn-descartar:hover {
+    background-color: #e74c3c;
+    box-shadow: none;
 }
-.jack-add { background: #27ae60; border: 1.5px solid white; }
+
+/* ============================================
+   ETIQUETAS JACKS
+   ============================================ */
+.etiqueta-jack {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-size: 0.6rem;
+    font-weight: bold;
+    padding: 2px 5px;
+    border-radius: 8px;
+    white-space: nowrap;
+    z-index: 15;
+    pointer-events: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.jack-add    { background: #27ae60; border: 1.5px solid white; }
 .jack-remove { background: #c0392b; border: 1.5px solid white; }
 
-#interfaz-victoria-mano { text-align: center; padding: 10px 0; }
-#interfaz-victoria-mano h2 { color: #f1c40f !important; font-size: 1.1rem; margin-bottom: 8px; }
+/* ============================================
+   PANEL DE VICTORIA / FIN DE PARTIDA
+   ============================================ */
+.panel-victoria {
+    text-align: center;
+    padding: 10px 0;
+}
 
-/* REGLAS Y HISTORIAL MODAL (AQUÍ ESTÁ LA MAGIA ARREGLADA) */
+.panel-victoria h2 {
+    color: #f1c40f;
+    margin-top: 0;
+    font-size: 1.5rem;
+    margin-bottom: 12px;
+}
+
+#btn-revancha {
+    background-color: #2ecc71;
+    width: 100%;
+}
+
+/* ============================================
+   MODALES (Reglas e Historial)
+   ============================================ */
 .oculta-modal { display: none !important; }
 
-/* CORRECCIÓN: Ahora el modal-historial comparte los mismos estilos que modal-reglas */
-#modal-reglas, #modal-historial {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.85); display: flex; justify-content: center;
-    align-items: center; z-index: 2000;
+#modal-reglas,
+#modal-historial {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
 }
 
 .contenido-modal {
-    background: linear-gradient(145deg, #2c3e50, #34495e); padding: 25px 25px;
-    border: 3px solid #f1c40f; border-radius: 14px; max-width: 500px; width: 90%;
-    color: white; box-shadow: 0 15px 40px rgba(0,0,0,0.8); max-height: 85vh; overflow-y: auto;
+    background: linear-gradient(145deg, #2c3e50, #34495e);
+    padding: 25px;
+    border: 3px solid #f1c40f;
+    border-radius: 14px;
+    max-width: 500px;
+    width: 90%;
+    color: white;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8);
+    max-height: 85vh;
+    overflow-y: auto;
 }
 
 .contenido-modal h2 { margin-top: 0; }
-.lista-reglas { padding-left: 0; list-style: none; }
-.lista-reglas li { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem; line-height: 1.4; }
+
+.titulo-modal-reglas    { color: #f1c40f; }
+.titulo-modal-historial { color: #3498db; margin-bottom: 15px; }
+
+/* Resaltado de texto en reglas */
+.resaltado-verde {
+    color: #2ecc71;
+    font-weight: bold;
+}
+
+/* Lista de reglas */
+.lista-reglas {
+    text-align: left;
+    line-height: 1.6;
+    font-size: 1.05rem;
+    padding-left: 18px;
+}
+
+.lista-reglas li {
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .lista-reglas li:last-child { border-bottom: none; }
-.cerrar-modal { float: right; font-size: 2.2rem; cursor: pointer; color: #e74c3c; line-height: 0.5; font-weight: bold; transition: color 0.2s; }
+
+/* Lista del historial */
+.lista-historial-items {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 50vh;
+    overflow-y: auto;
+    text-align: left;
+    font-size: 0.95rem;
+}
+
+/* Botón cerrar modal */
+.cerrar-modal {
+    float: right;
+    font-size: 2.2rem;
+    cursor: pointer;
+    color: #e74c3c;
+    line-height: 0.5;
+    font-weight: bold;
+    transition: color 0.2s;
+}
+
 .cerrar-modal:hover { color: #ff7675; }
 
-/* RESPONSIVE */
+/* ============================================
+   RESPONSIVE
+   ============================================ */
 @media (min-width: 768px) {
     .mano { width: 95%; padding: 12px 20px 15px 20px; }
     #contenedor-cartas { justify-content: center; gap: 10px; }
@@ -131,12 +324,21 @@
     .etiqueta-jack { font-size: 0.7rem; padding: 3px 6px; }
     #btn-descartar { font-size: 0.9rem; padding: 8px 18px; }
 }
-@media (min-width: 1200px) { .carta-mano { height: 100px; } .mano { max-width: 750px; } }
+
+@media (min-width: 1200px) {
+    .carta-mano { height: 100px; }
+    .mano { max-width: 750px; }
+}
+
 @media (max-width: 360px) {
-    .carta-mano { height: 60px; } .mano h3 { font-size: 0.75rem; }
+    .carta-mano { height: 60px; }
+    .mano h3 { font-size: 0.75rem; }
     #btn-descartar { font-size: 0.75rem; padding: 5px 10px; }
     .etiqueta-jack { font-size: 0.5rem; padding: 1px 3px; }
 }
+
 @media (max-height: 500px) and (orientation: landscape) {
-    .mano { padding: 5px 10px 8px 10px; } .carta-mano { height: 55px; } .mano h3 { font-size: 0.7rem; }
+    .mano { padding: 5px 10px 8px 10px; }
+    .carta-mano { height: 55px; }
+    .mano h3 { font-size: 0.7rem; }
 }

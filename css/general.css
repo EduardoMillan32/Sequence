@@ -18,16 +18,21 @@ body {
 
 /* Lógica de pantallas */
 .pantalla { display: none; }
-.pantalla.activa { 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    width: 100%; 
+.pantalla.activa {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
     min-height: 100vh;
     min-height: 100dvh;
-    justify-content: center; /* Centra el lobby y login verticalmente */
+    justify-content: center;
 }
+
+/* .oculta oculta elementos genéricos (no pantallas) */
 .oculta { display: none !important; }
+
+/* Las pantallas se controlan solo con .activa, no con .oculta */
+.pantalla.activa { display: flex !important; }
 
 /* Botones genéricos con efectos de toque */
 button {
