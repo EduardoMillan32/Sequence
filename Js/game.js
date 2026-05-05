@@ -20,6 +20,9 @@ let ultimaFichaColocadaEl  = null;
 let ultimaCasillaRemovidaEl = null;
 // Timer para auto-limpiar el overlay de Jack
 let timerOverlayJack = null;
+// Timers para auto-limpiar los efectos de última ficha colocada/removida
+let timerUltimaColocada  = null;
+let timerUltimaRemovida  = null;
 
 // ============================================
 // AYUDANTES DE FORMATO VISUAL
@@ -332,6 +335,8 @@ function mostrarOverlayJack(tipo, codigoCarta) {
  * Se llama al inicio de cada nueva jugada para limpiar el estado anterior.
  */
 function limpiarEfectosAnteriores() {
+    if (timerUltimaColocada)  { clearTimeout(timerUltimaColocada);  timerUltimaColocada  = null; }
+    if (timerUltimaRemovida)  { clearTimeout(timerUltimaRemovida);  timerUltimaRemovida  = null; }
     if (ultimaFichaColocadaEl) {
         ultimaFichaColocadaEl.classList.remove('ultima-colocada');
         ultimaFichaColocadaEl = null;
@@ -444,6 +449,14 @@ function colocarFichaVisual(indice, color) {
             ficha.addEventListener('transitionend', () => {
                 ficha.classList.add('ultima-colocada');
                 ultimaFichaColocadaEl = ficha;
+
+                // Auto-limpiar el brillo después de 8 segundos
+                if (timerUltimaColocada) clearTimeout(timerUltimaColocada);
+                timerUltimaColocada = setTimeout(() => {
+                    ficha.classList.remove('ultima-colocada');
+                    if (ultimaFichaColocadaEl === ficha) ultimaFichaColocadaEl = null;
+                    timerUltimaColocada = null;
+                }, 8000);
             }, { once: true });
         });
     });
@@ -468,6 +481,14 @@ function quitarFichaVisual(indice) {
         // Aplicar marcado rojo a la casilla vacía para indicar dónde se quitó la ficha
         casilla.classList.add('ultima-removida');
         ultimaCasillaRemovidaEl = casilla;
+
+        // Auto-limpiar el marcado después de 5 segundos
+        if (timerUltimaRemovida) clearTimeout(timerUltimaRemovida);
+        timerUltimaRemovida = setTimeout(() => {
+            casilla.classList.remove('ultima-removida');
+            if (ultimaCasillaRemovidaEl === casilla) ultimaCasillaRemovidaEl = null;
+            timerUltimaRemovida = null;
+        }, 5000);
     }, { once: true });
 }
 

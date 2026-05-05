@@ -6,6 +6,10 @@ let miJugador = { nombre: "", color: null, listo: false };
 let jugadoresEnSala = [];
 let juegoIniciadoVisualmente = false;
 let partidaIniciada = false;
+// Bandera: solo limpiamos la sala la primera vez que somos el único jugador
+// (al entrar). Evita que el listener borre el estado cuando llega un segundo
+// jugador y el snapshot intermedio aún no lo incluye.
+let yaLimpioSala = false;
 
 const salaRef        = baseDatos.ref('sala_activa/jugadores');
 const estadoJuegoRef = baseDatos.ref('sala_activa/estado');
@@ -137,11 +141,15 @@ salaRef.on('value', (snapshot) => {
         partidaIniciada = false;
     }
 
-    // Si soy el único jugador, limpio toda la sala para empezar fresco
-    if (jugadoresEnSala.length === 1 && jugadoresEnSala[0].id === miJugadorId) {
+    // Si soy el único jugador Y aún no limpié la sala, limpio para empezar fresco.
+    // La bandera yaLimpioSala evita que esta limpieza se repita en disparos posteriores
+    // del listener (ej: cuando llega un segundo jugador y el snapshot intermedio
+    // aún no lo incluye, lo que haría que jugadoresEnSala.length === 1 sea true
+    // momentáneamente y borre el estado de la sala).
+    if (!yaLimpioSala && jugadoresEnSala.length === 1 && jugadoresEnSala[0].id === miJugadorId) {
+        yaLimpioSala = true;
         nombresEquiposRef.remove();
         estadoJuegoRef.set(null);
-        // tableroRef se define en game.js; usamos la referencia directa para evitar dependencia de orden
         baseDatos.ref('sala_activa/tablero').set(null);
         baseDatos.ref('sala_activa/mazo').remove();
     }
@@ -360,6 +368,10 @@ estadoJuegoRef.on('value', (snapshot) => {
 // ============================================
 window.volverAlLobby = function () {
     if (jugadoresEnSala.length === 0 || jugadoresEnSala[0].id !== miJugadorId) return;
+
+    // Resetear la bandera para que la próxima vez que quede solo en sala
+    // pueda volver a limpiar el estado correctamente
+    yaLimpioSala = false;
 
     estadoJuegoRef.set(null);
     baseDatos.ref('sala_activa/tablero').set(null);
