@@ -10,9 +10,16 @@ let secuenciasLogradas = { rojo: 0, azul: 0, verde: 0 };
 let combosYaMarcados = new Set();
 
 const tableroRef = baseDatos.ref('sala_activa/tablero');
-let turnoActualId  = null;
-let miTurno        = false;
+let turnoActualId    = null;
+let miTurno          = false;
 let listaOrdenTurnos = [];
+
+// Referencia a la última ficha colocada (para quitar el brillo al siguiente turno)
+let ultimaFichaColocadaEl  = null;
+// Referencia a la última casilla de la que se quitó una ficha
+let ultimaCasillaRemovidaEl = null;
+// Timer para auto-limpiar el overlay de Jack
+let timerOverlayJack = null;
 
 // ============================================
 // AYUDANTES DE FORMATO VISUAL
@@ -150,6 +157,22 @@ tableroRef.on('child_removed', (snapshot) => {
 });
 
 // ============================================
+// LISTENER: Overlay de Jack (para todos los jugadores)
+// El jugador que usa el Jack escribe en Firebase,
+// todos los demás lo leen y muestran el overlay.
+// ============================================
+baseDatos.ref('sala_activa/estado/ultimoJack').on('value', (snapshot) => {
+    if (!juegoIniciadoVisualmente) return;
+    const datos = snapshot.val();
+    if (!datos) return;
+
+    // No mostrarlo al jugador que lo usó (ya lo ve localmente)
+    if (datos.jugadorId === miJugadorId) return;
+
+    mostrarOverlayJack(datos.tipo, datos.codigoCarta);
+});
+
+// ============================================
 // GENERACIÓN DEL MAZO
 // ============================================
 function obtenerMazoBarajado() {
@@ -162,10 +185,14 @@ function obtenerMazoBarajado() {
         valores.forEach(valor => mazoBase.push(valor + palo));
     });
 
-    // Jacks especiales: J1 = 2 ojos (comodín), J2 = 1 ojo (anticomodín)
-    const jacksEspeciales = ['J1S', 'J1H', 'J1D', 'J1C', 'J2S', 'J2H', 'J2D', 'J2C'];
+    // Jacks especiales:
+    // J1 = 2 ojos (comodín)     → Diamante (JD) y Trébol (JC)
+    // J2 = 1 ojo (anticomodín)  → Corazón  (JH) y Pica   (JS)
+    // Con 2 barajas hay 2 copias de cada Jack, por lo que hay
+    // 4 Jacks de 2 ojos (JD×2, JC×2) y 4 Jacks de 1 ojo (JH×2, JS×2)
+    const jacksEspeciales = ['J1D', 'J1D', 'J1C', 'J1C', 'J2H', 'J2H', 'J2S', 'J2S'];
 
-    // El mazo de Sequence usa 2 barajas completas + los jacks especiales
+    // El mazo de Sequence usa 2 barajas completas (sin Jacks normales) + los jacks especiales
     let mazoCompleto = [...mazoBase, ...mazoBase, ...jacksEspeciales];
 
     // Barajado Fisher-Yates
@@ -190,10 +217,26 @@ window.evaluarOpcionesDeTurno = function () {
 
     if (manoPropia && manoPropia.length > 0) {
         for (const carta of manoPropia) {
-            // Los Jacks siempre son jugables
-            if (carta.startsWith('J')) {
-                tieneJugada = true;
-                break;
+            // Jack de 2 ojos: jugable si hay al menos una casilla libre (no esquina)
+            if (carta.startsWith('J1')) {
+                const hayLibre = [...casillas].some(c =>
+                    c.dataset.carta !== "LIBRE" && !c.querySelector('.ficha')
+                );
+                if (hayLibre) { tieneJugada = true; break; }
+                continue;
+            }
+            // Jack de 1 ojo: jugable si hay al menos una ficha rival no protegida
+            if (carta.startsWith('J2')) {
+                const hayRival = [...casillas].some(c => {
+                    const ficha = c.querySelector('.ficha');
+                    if (!ficha) return false;
+                    if (ficha.classList.contains(`ficha-${miJugador.color}`)) return false;
+                    return !c.classList.contains('protegida-rojo') &&
+                           !c.classList.contains('protegida-azul') &&
+                           !c.classList.contains('protegida-verde');
+                });
+                if (hayRival) { tieneJugada = true; break; }
+                continue;
             }
 
             let hayEspacioLibre   = false;
@@ -247,6 +290,59 @@ window.ejecutarPasoDeTurno = function () {
 };
 
 // ============================================
+// EFECTOS VISUALES
+// ============================================
+
+/**
+ * Muestra el overlay animado cuando se usa un Jack.
+ * @param {'add'|'remove'} tipo    - 'add' = 2 ojos, 'remove' = 1 ojo
+ * @param {string} codigoCarta     - Código interno de la carta (ej: "J1S", "J2H")
+ */
+function mostrarOverlayJack(tipo, codigoCarta) {
+    const overlay = document.getElementById('overlay-jack');
+    const img     = document.getElementById('overlay-jack-img');
+    if (!overlay || !img) return;
+
+    // Limpiar timer anterior si existía
+    if (timerOverlayJack) clearTimeout(timerOverlayJack);
+
+    // Construir URL de la carta:
+    // J1S → JS, J2H → JH (la API solo conoce J sin número de ojo)
+    const codigoAPI = "J" + codigoCarta.slice(2);
+    img.src = `https://deckofcardsapi.com/static/img/${codigoAPI}.png`;
+    img.alt = codigoCarta;
+
+    // Forzar re-animación: quitar y re-añadir la clase CSS en el siguiente frame
+    // (NO clonar el nodo — clonar haría que document.getElementById lo pierda)
+    img.classList.remove('jack-carta-animada');
+    overlay.className = `visible jack-${tipo}`;
+
+    requestAnimationFrame(() => {
+        img.classList.add('jack-carta-animada');
+    });
+
+    // Auto-ocultar después de 2.2 segundos
+    timerOverlayJack = setTimeout(() => {
+        overlay.className = '';
+    }, 2200);
+}
+
+/**
+ * Quita el brillo de la última ficha colocada y el marcado de la última removida.
+ * Se llama al inicio de cada nueva jugada para limpiar el estado anterior.
+ */
+function limpiarEfectosAnteriores() {
+    if (ultimaFichaColocadaEl) {
+        ultimaFichaColocadaEl.classList.remove('ultima-colocada');
+        ultimaFichaColocadaEl = null;
+    }
+    if (ultimaCasillaRemovidaEl) {
+        ultimaCasillaRemovidaEl.classList.remove('ultima-removida');
+        ultimaCasillaRemovidaEl = null;
+    }
+}
+
+// ============================================
 // COLOCAR / QUITAR FICHA
 // ============================================
 function intentarPonerFicha(indiceTablero, cartaTablero) {
@@ -269,8 +365,21 @@ function intentarPonerFicha(indiceTablero, cartaTablero) {
                               casillaActual.classList.contains('protegida-verde');
         if (estaProtegida) return mostrarToast("No puedes quitar una ficha de un Sequence ya completado.", "error");
 
+        // Guardar referencia a la casilla ANTES de quitar la ficha (para el efecto visual)
+        limpiarEfectosAnteriores();
+        ultimaCasillaRemovidaEl = casillaActual;
+
+        // Mostrar overlay localmente y notificar a los demás via Firebase
+        mostrarOverlayJack('remove', cartaEnMano);
+        baseDatos.ref('sala_activa/estado/ultimoJack').set({
+            tipo: 'remove',
+            codigoCarta: cartaEnMano,
+            jugadorId: miJugadorId,
+            ts: Date.now()
+        });
+
         tableroRef.child(indiceTablero).remove();
-        actualizarManoTrasJugada(`❌ ${nombreColor} quitó una ficha con su Jack.`);
+        actualizarManoTrasJugada(`❌ ${nombreColor} quitó una ficha con su Jack de 1 Ojo.`);
         return;
     }
 
@@ -283,11 +392,25 @@ function intentarPonerFicha(indiceTablero, cartaTablero) {
 
     if (!jugadaValida) return mostrarToast("Esa carta no coincide con esta casilla.", "error");
 
+    // Limpiar efectos de la jugada anterior antes de registrar la nueva
+    limpiarEfectosAnteriores();
+
+    // Mostrar overlay si es Jack de 2 ojos y notificar a los demás via Firebase
+    if (cartaEnMano.startsWith("J1")) {
+        mostrarOverlayJack('add', cartaEnMano);
+        baseDatos.ref('sala_activa/estado/ultimoJack').set({
+            tipo: 'add',
+            codigoCarta: cartaEnMano,
+            jugadorId: miJugadorId,
+            ts: Date.now()
+        });
+    }
+
     tableroRef.child(indiceTablero).set(miJugador.color);
 
     const cartaTraducida = traducirCartaAIcono(cartaTablero);
     const msj = cartaEnMano.startsWith("J1")
-        ? `🃏 ${nombreColor} usó un Comodín en ${cartaTraducida}.`
+        ? `🃏 ${nombreColor} usó un Comodín (2 Ojos) en ${cartaTraducida}.`
         : `🃏 ${nombreColor} colocó ficha en ${cartaTraducida}.`;
 
     actualizarManoTrasJugada(msj);
@@ -297,26 +420,55 @@ function colocarFichaVisual(indice, color) {
     const casillas = document.querySelectorAll('.casilla');
     if (casillas[indice].querySelector('.ficha')) return; // Ya existe, no duplicar
 
+    // Quitar brillo de la ficha anterior antes de colocar la nueva
+    if (ultimaFichaColocadaEl) {
+        ultimaFichaColocadaEl.classList.remove('ultima-colocada');
+        ultimaFichaColocadaEl = null;
+    }
+
     const ficha = document.createElement('div');
-    ficha.classList.add('ficha', `ficha-${color}`);
-    ficha.style.transform = 'scale(0)';
+    // Añadir clase 'entrando' ANTES de insertar en el DOM:
+    // así el estado inicial (scale 0) está definido en CSS y no en estilos inline.
+    // Esto evita que un reflow posterior afecte a fichas ya colocadas en el tablero.
+    ficha.classList.add('ficha', `ficha-${color}`, 'entrando');
     casillas[indice].appendChild(ficha);
 
+    // Forzar que el navegador registre el estado inicial (scale 0) antes de
+    // quitar la clase 'entrando', lo que dispara la transición CSS a scale(1).
+    // Usamos requestAnimationFrame doble para garantizar al menos un frame pintado.
     requestAnimationFrame(() => {
-        ficha.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
-        ficha.style.transform  = 'scale(1)';
+        requestAnimationFrame(() => {
+            ficha.classList.remove('entrando');
+
+            // Aplicar brillo dorado tras la animación de entrada
+            ficha.addEventListener('transitionend', () => {
+                ficha.classList.add('ultima-colocada');
+                ultimaFichaColocadaEl = ficha;
+            }, { once: true });
+        });
     });
 }
 
 function quitarFichaVisual(indice) {
     const casillas = document.querySelectorAll('.casilla');
-    const ficha    = casillas[indice].querySelector('.ficha');
+    const casilla  = casillas[indice];
+    const ficha    = casilla.querySelector('.ficha');
     if (!ficha) return;
+
+    // Quitar marcado de casilla removida anterior
+    if (ultimaCasillaRemovidaEl && ultimaCasillaRemovidaEl !== casilla) {
+        ultimaCasillaRemovidaEl.classList.remove('ultima-removida');
+    }
 
     ficha.style.transition = 'transform 0.2s ease-in, opacity 0.2s ease-in';
     ficha.style.transform  = 'scale(0)';
     ficha.style.opacity    = '0';
-    ficha.addEventListener('transitionend', () => ficha.remove(), { once: true });
+    ficha.addEventListener('transitionend', () => {
+        ficha.remove();
+        // Aplicar marcado rojo a la casilla vacía para indicar dónde se quitó la ficha
+        casilla.classList.add('ultima-removida');
+        ultimaCasillaRemovidaEl = casilla;
+    }, { once: true });
 }
 
 // ============================================
@@ -509,6 +661,16 @@ window.intentarDescartarCartaMuerta = function () {
 function reiniciarEstadoJuegoLocal() {
     secuenciasLogradas = { rojo: 0, azul: 0, verde: 0 };
     combosYaMarcados.clear();
+
+    // Limpiar efectos visuales de la partida anterior
+    limpiarEfectosAnteriores();
+    if (timerOverlayJack) {
+        clearTimeout(timerOverlayJack);
+        timerOverlayJack = null;
+    }
+    const overlay = document.getElementById('overlay-jack');
+    if (overlay) overlay.className = '';
+
     const listaHistorial = document.getElementById('lista-historial');
     if (listaHistorial) listaHistorial.innerHTML = "";
     if (typeof generarTablero === 'function') generarTablero();

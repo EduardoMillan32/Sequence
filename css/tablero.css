@@ -73,20 +73,122 @@
     z-index: 10;
     box-shadow: inset 0 0 8px rgba(0,0,0,0.5), 0 2px 5px rgba(0,0,0,0.8);
     border: 2px solid white;
-    pointer-events: none; 
+    pointer-events: none;
+    /* La animación de entrada se controla por clase, no por estilos inline,
+       para evitar que un reflow afecte a fichas ya colocadas en el tablero. */
+    transform: scale(1);
 }
-.ficha-rojo { background: radial-gradient(circle at 35% 35%, #ff6b6b, #c0392b); }
-.ficha-azul { background: radial-gradient(circle at 35% 35%, #74b9ff, #2980b9); }
+.ficha-rojo  { background: radial-gradient(circle at 35% 35%, #ff6b6b, #c0392b); }
+.ficha-azul  { background: radial-gradient(circle at 35% 35%, #74b9ff, #2980b9); }
 .ficha-verde { background: radial-gradient(circle at 35% 35%, #55efc4, #00b894); }
 
-/* ANIMACIONES */
-.casilla.protegida-rojo { border: 3px solid #e74c3c !important; animation: brillar-rojo 1.5s infinite alternate; }
-.casilla.protegida-azul { border: 3px solid #3498db !important; animation: brillar-azul 1.5s infinite alternate; }
+/* Estado inicial de la ficha antes de la animación de entrada */
+.ficha.entrando {
+    transform: scale(0);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ============================================
+   SEQUENCES PROTEGIDOS
+   ============================================ */
+.casilla.protegida-rojo  { border: 3px solid #e74c3c !important; animation: brillar-rojo  1.5s infinite alternate; }
+.casilla.protegida-azul  { border: 3px solid #3498db !important; animation: brillar-azul  1.5s infinite alternate; }
 .casilla.protegida-verde { border: 3px solid #2ecc71 !important; animation: brillar-verde 1.5s infinite alternate; }
 
-@keyframes brillar-rojo { from { box-shadow: inset 0 0 5px #e74c3c, 0 0 5px #e74c3c; } to { box-shadow: inset 0 0 15px #e74c3c, 0 0 15px #e74c3c; } }
-@keyframes brillar-azul { from { box-shadow: inset 0 0 5px #3498db, 0 0 5px #3498db; } to { box-shadow: inset 0 0 15px #3498db, 0 0 15px #3498db; } }
+@keyframes brillar-rojo  { from { box-shadow: inset 0 0 5px #e74c3c, 0 0 5px #e74c3c; } to { box-shadow: inset 0 0 15px #e74c3c, 0 0 15px #e74c3c; } }
+@keyframes brillar-azul  { from { box-shadow: inset 0 0 5px #3498db, 0 0 5px #3498db; } to { box-shadow: inset 0 0 15px #3498db, 0 0 15px #3498db; } }
 @keyframes brillar-verde { from { box-shadow: inset 0 0 5px #2ecc71, 0 0 5px #2ecc71; } to { box-shadow: inset 0 0 15px #2ecc71, 0 0 15px #2ecc71; } }
+
+/* ============================================
+   ÚLTIMA FICHA COLOCADA — brillo pulsante suave
+   ============================================ */
+.ficha.ultima-colocada {
+    animation: pulso-ultima 1.8s ease-in-out infinite;
+    border-color: #f1c40f;
+    border-width: 3px;
+}
+
+@keyframes pulso-ultima {
+    0%   { box-shadow: inset 0 0 6px rgba(0,0,0,0.5), 0 0 6px  rgba(241,196,15,0.9),  0 0 12px rgba(241,196,15,0.5); }
+    50%  { box-shadow: inset 0 0 6px rgba(0,0,0,0.5), 0 0 14px rgba(241,196,15,1),    0 0 28px rgba(241,196,15,0.7); }
+    100% { box-shadow: inset 0 0 6px rgba(0,0,0,0.5), 0 0 6px  rgba(241,196,15,0.9),  0 0 12px rgba(241,196,15,0.5); }
+}
+
+/* ============================================
+   ÚLTIMA FICHA REMOVIDA — brillo rojo pulsante
+   ============================================ */
+.casilla.ultima-removida::after {
+    content: "✕";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: rgba(231, 76, 60, 0.9);
+    background: rgba(231, 76, 60, 0.15);
+    border-radius: 3px;
+    z-index: 11;
+    animation: pulso-removida 1.8s ease-in-out infinite;
+    pointer-events: none;
+}
+
+.casilla.ultima-removida {
+    border: 3px solid rgba(231, 76, 60, 0.8) !important;
+    animation: borde-removida 1.8s ease-in-out infinite;
+}
+
+@keyframes pulso-removida {
+    0%   { opacity: 0.6; }
+    50%  { opacity: 1;   }
+    100% { opacity: 0.6; }
+}
+
+@keyframes borde-removida {
+    0%   { box-shadow: 0 0 6px  rgba(231,76,60,0.6); }
+    50%  { box-shadow: 0 0 16px rgba(231,76,60,1);   }
+    100% { box-shadow: 0 0 6px  rgba(231,76,60,0.6); }
+}
+
+/* ============================================
+   OVERLAY DE JACK — aparece sobre el tablero
+   ============================================ */
+#overlay-jack {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 5000;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#overlay-jack.visible { opacity: 1; }
+
+.jack-carta-animada {
+    width: clamp(80px, 18vw, 160px);
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 0 30px rgba(255, 255, 255, 0.4), 0 8px 30px rgba(0, 0, 0, 0.8);
+    animation: jack-giro 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    transform-origin: center;
+    -webkit-user-drag: none;
+    pointer-events: none;
+}
+
+@keyframes jack-giro {
+    0%   { transform: scale(0) rotate(-180deg); opacity: 0; }
+    60%  { transform: scale(1.15) rotate(8deg); opacity: 1; }
+    100% { transform: scale(1)   rotate(0deg);  opacity: 1; }
+}
+
+/* Fondo semitransparente del overlay según tipo de jack */
+#overlay-jack.jack-add    { background: radial-gradient(ellipse at center, rgba(39,174,96,0.4)  0%, rgba(0,0,0,0.65) 70%); }
+#overlay-jack.jack-remove { background: radial-gradient(ellipse at center, rgba(192,57,43,0.4)  0%, rgba(0,0,0,0.65) 70%); }
 
 /* RESPONSIVE ADAPTATIONS */
 @media (min-width: 768px) {

@@ -54,41 +54,31 @@ function entrarLobby() {
         : Promise.resolve();
     // ────────────────────────────────────────────────────────────────
 
-    promesaLimpieza.then(() => {
-        // Crear nueva entrada en Firebase
-        miJugadorRef = salaRef.push();
+    const entrarConDatos = () => {
+        // salaRef.push(miJugador) crea el nodo con los datos en UNA SOLA operación.
+        // Antes se usaba push() vacío + set() separado, lo que causaba una race condition:
+        // el listener 'value' se disparaba con el nodo vacío (sin nombre) antes de que
+        // set() lo llenara, haciendo que el jugador anterior desapareciera de la lista.
+        miJugadorRef = salaRef.push(miJugador);
         miJugadorId  = miJugadorRef.key;
 
         // Persistir el ID en este dispositivo para poder limpiar en el futuro
         localStorage.setItem('sequence_jugador_id', miJugadorId);
 
-        miJugadorRef.set(miJugador);
-
-        // Limpieza automática al desconectarse (Firebase onDisconnect)
-        miJugadorRef.onDisconnect().remove().then(() => {
-            estadoJuegoRef.onDisconnect().update({
-                abandonado: true,
-                nombreAbandono: miJugador.nombre
-            });
+        // Configurar limpieza automática al desconectarse
+        miJugadorRef.onDisconnect().remove();
+        estadoJuegoRef.onDisconnect().update({
+            abandonado: true,
+            nombreAbandono: miJugador.nombre
         });
 
         pantallaLogin.classList.remove('activa');
         pantallaLogin.classList.add('oculta');
         pantallaLobby.classList.remove('oculta');
         pantallaLobby.classList.add('activa');
-    }).catch(() => {
-        // Si falla la limpieza (ej: sin permisos), entramos igual
-        miJugadorRef = salaRef.push();
-        miJugadorId  = miJugadorRef.key;
-        localStorage.setItem('sequence_jugador_id', miJugadorId);
-        miJugadorRef.set(miJugador);
-        miJugadorRef.onDisconnect().remove();
+    };
 
-        pantallaLogin.classList.remove('activa');
-        pantallaLogin.classList.add('oculta');
-        pantallaLobby.classList.remove('oculta');
-        pantallaLobby.classList.add('activa');
-    });
+    promesaLimpieza.then(entrarConDatos).catch(entrarConDatos);
 }
 
 // ============================================
@@ -375,6 +365,8 @@ window.volverAlLobby = function () {
     baseDatos.ref('sala_activa/tablero').set(null);
     nombresEquiposRef.remove();
     baseDatos.ref('sala_activa/mazo').set(null);
+    // Limpiar el último Jack para que no se dispare en la siguiente partida
+    baseDatos.ref('sala_activa/estado/ultimoJack').remove();
     jugadoresEnSala.forEach(j => {
         baseDatos.ref(`sala_activa/jugadores/${j.id}/mano`).remove();
     });
