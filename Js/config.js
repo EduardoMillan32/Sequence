@@ -13,7 +13,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const baseDatos = firebase.database();
 
-// Objeto global para mantener el estado de las reglas de la partida
 const configuracionJuego = {
     numeroJugadores: 0,
     numeroEquipos: 0,
@@ -24,11 +23,8 @@ const configuracionJuego = {
 function inicializarReglas(jugadoresTotales, equiposTotales) {
     configuracionJuego.numeroJugadores = jugadoresTotales;
     configuracionJuego.numeroEquipos = equiposTotales;
-
-    // Regla de victoria: 3 equipos = 1 sequence, resto = 2
     configuracionJuego.sequencesParaGanar = (equiposTotales === 3) ? 1 : 2;
 
-    // Regla de cartas a repartir según número de jugadores
     if (jugadoresTotales === 2)                                     configuracionJuego.cartasPorJugador = 7;
     else if (jugadoresTotales >= 3 && jugadoresTotales <= 4)        configuracionJuego.cartasPorJugador = 6;
     else if (jugadoresTotales === 6)                                configuracionJuego.cartasPorJugador = 5;
@@ -43,14 +39,13 @@ function inicializarReglas(jugadoresTotales, equiposTotales) {
 // ============================================
 window.mostrarToast = function(mensaje, tipo = "info", duracion = 3000) {
     const contenedor = document.getElementById('contenedor-toast');
-    if (!contenedor) return alert(mensaje); // Respaldo de seguridad
+    if (!contenedor) return alert(mensaje);
 
     const toast = document.createElement('div');
     toast.classList.add('toast', `toast-${tipo}`);
     toast.innerText = mensaje;
     contenedor.appendChild(toast);
 
-    // Forzar reflow para que la animación de entrada funcione
     toast.offsetHeight;
     toast.classList.add('toast-visible');
 

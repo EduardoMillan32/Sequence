@@ -4,19 +4,11 @@ let manoPropia = [];
 let cartaSeleccionadaIdx = null;
 const contenedorMano = document.getElementById('contenedor-cartas');
 
-/**
- * Convierte un código de carta interno al código de la API de deckofcardsapi.com.
- *   "10S" → "0S"   (los dieces usan "0" en la API)
- *   "J1S" → "JS"   (Jacks especiales: quitamos el número del tipo)
- *   "J2H" → "JH"
- *   "AS"  → "AS"   (resto sin cambios)
- */
 function cartaManoACodigoAPI(carta) {
     if (carta.startsWith("10")) {
-        return "0" + carta.slice(2);   // "10S" → "0S"
+        return "0" + carta.slice(2);
     }
     if (carta.startsWith("J")) {
-        // "J1S" → "JS", "J2H" → "JH"
         return "J" + carta.slice(2);
     }
     return carta;
@@ -53,7 +45,6 @@ function renderizarMano() {
             imgCarta.classList.add('carta-seleccionada');
         }
 
-        // Etiqueta visual para Jacks especiales
         if (carta.startsWith("J1")) {
             const etiqueta = document.createElement('span');
             etiqueta.innerText = "➕ 2 OJOS";

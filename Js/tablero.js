@@ -2,7 +2,6 @@
 
 const tableroElemento = document.getElementById('tablero');
 
-// Mapeo real del tablero de Sequence (10x10)
 const mapaCartas = [
     "LIBRE", "2S",  "3S",  "4S",  "5S",  "6S",  "7S",  "8S",  "9S",  "LIBRE",
     "6C",    "5C",  "4C",  "3C",  "2C",  "AH",  "KH",  "QH",  "10H", "10S",
@@ -16,14 +15,8 @@ const mapaCartas = [
     "LIBRE", "AD",  "KD",  "QD",  "10D", "9D",  "8D",  "7D",  "6D",  "LIBRE"
 ];
 
-/**
- * Convierte un código de carta interno (ej: "10S", "AH", "KD")
- * al código que usa la API de deckofcardsapi.com (ej: "0S", "AH", "KD").
- * La API usa "0" en lugar de "10" para los dieces.
- */
 function cartaACodigoAPI(carta) {
     if (carta.startsWith("10")) {
-        // "10S" → "0S", "10H" → "0H", etc.
         return "0" + carta.slice(2);
     }
     return carta;

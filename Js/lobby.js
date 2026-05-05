@@ -6,9 +6,6 @@ let miJugador = { nombre: "", color: null, listo: false };
 let jugadoresEnSala = [];
 let juegoIniciadoVisualmente = false;
 let partidaIniciada = false;
-// Bandera: solo limpiamos la sala la primera vez que somos el único jugador
-// (al entrar). Evita que el listener borre el estado cuando llega un segundo
-// jugador y el snapshot intermedio aún no lo incluye.
 let yaLimpioSala = false;
 
 const salaRef        = baseDatos.ref('sala_activa/jugadores');
@@ -33,7 +30,6 @@ nombresEquiposRef.on('value', (snapshot) => {
 
     const spanEditable = document.getElementById('nombre-editable');
     if (spanEditable && miJugador.color && nombresEquipos[miJugador.color]) {
-        // Solo actualiza si el usuario no está editando activamente
         if (document.activeElement !== spanEditable) {
             spanEditable.innerText = nombresEquipos[miJugador.color];
         }
@@ -49,27 +45,17 @@ function entrarLobby() {
 
     miJugador.nombre = nombre;
 
-    // ── ANTI-DUPLICADO ──────────────────────────────────────────────
-    // Si este dispositivo ya tenía una sesión activa (por recarga o
-    // cierre inesperado), eliminamos esa entrada antes de crear una nueva.
     const idAnterior = localStorage.getItem('sequence_jugador_id');
     const promesaLimpieza = idAnterior
-        ? salaRef.child(idAnterior).remove()   // borra la entrada huérfana
+        ? salaRef.child(idAnterior).remove()
         : Promise.resolve();
-    // ────────────────────────────────────────────────────────────────
 
     const entrarConDatos = () => {
-        // salaRef.push(miJugador) crea el nodo con los datos en UNA SOLA operación.
-        // Antes se usaba push() vacío + set() separado, lo que causaba una race condition:
-        // el listener 'value' se disparaba con el nodo vacío (sin nombre) antes de que
-        // set() lo llenara, haciendo que el jugador anterior desapareciera de la lista.
         miJugadorRef = salaRef.push(miJugador);
         miJugadorId  = miJugadorRef.key;
 
-        // Persistir el ID en este dispositivo para poder limpiar en el futuro
         localStorage.setItem('sequence_jugador_id', miJugadorId);
 
-        // Configurar limpieza automática al desconectarse
         miJugadorRef.onDisconnect().remove();
         estadoJuegoRef.onDisconnect().update({
             abandonado: true,
@@ -98,7 +84,6 @@ function seleccionarColor(color) {
     const titulo = document.getElementById('titulo-equipo');
     titulo.innerHTML = `Equipo: <span id="nombre-editable" contenteditable="true" spellcheck="false" style="outline: none;">${nombreMostrar}</span>`;
 
-    // Adjuntar listener al nuevo span creado
     document.getElementById('nombre-editable').addEventListener('input', function () {
         cambiarNombreEquipo(this.innerText);
     });
@@ -136,17 +121,17 @@ salaRef.on('value', (snapshot) => {
             }
         });
     } else {
-        // No hay jugadores: limpiar estado de partida
         estadoJuegoRef.set(null);
         partidaIniciada = false;
     }
 
-    // Si soy el único jugador Y aún no limpié la sala, limpio para empezar fresco.
-    // La bandera yaLimpioSala evita que esta limpieza se repita en disparos posteriores
-    // del listener (ej: cuando llega un segundo jugador y el snapshot intermedio
-    // aún no lo incluye, lo que haría que jugadoresEnSala.length === 1 sea true
-    // momentáneamente y borre el estado de la sala).
-    if (!yaLimpioSala && jugadoresEnSala.length === 1 && jugadoresEnSala[0].id === miJugadorId) {
+    if (miJugadorId && miJugador.nombre && !jugadoresEnSala.find(j => j.id === miJugadorId)) {
+        jugadoresEnSala.unshift({ ...miJugador, id: miJugadorId });
+        salaRef.child(miJugadorId).set(miJugador);
+    }
+
+    if (!yaLimpioSala && miJugadorId &&
+        jugadoresEnSala.length === 1 && jugadoresEnSala[0].id === miJugadorId) {
         yaLimpioSala = true;
         nombresEquiposRef.remove();
         estadoJuegoRef.set(null);
@@ -186,14 +171,12 @@ function verificarReglasParaIniciar() {
     const totalJugadores = jugadoresEnSala.length;
     if (totalJugadores === 0) return;
 
-    // Todos deben estar listos
     const todosListos = jugadoresEnSala.every(j => j.listo);
     if (!todosListos) {
         mensajeValidacion.innerText = "Faltan jugadores por confirmar.";
         return;
     }
 
-    // Contar jugadores por equipo
     const conteo = { rojo: 0, azul: 0, verde: 0 };
     jugadoresEnSala.forEach(j => { if (j.color) conteo[j.color]++; });
 
@@ -222,12 +205,10 @@ function verificarReglasParaIniciar() {
 
     mensajeValidacion.innerText = "¡Todo listo! Iniciando partida...";
 
-    // Solo el primer jugador (anfitrión) inicializa la partida en Firebase
     if (jugadoresEnSala[0].id === miJugadorId) {
         partidaIniciada = true;
         baseDatos.ref('sala_activa/tablero').set(null);
 
-        // Construir orden de turnos intercalando equipos
         const verdes = jugadoresEnSala.filter(j => j.color === 'verde');
         const azules  = jugadoresEnSala.filter(j => j.color === 'azul');
         const rojos   = jugadoresEnSala.filter(j => j.color === 'rojo');
@@ -246,7 +227,6 @@ function verificarReglasParaIniciar() {
         inicializarReglas(totalJugadores, numEquipos);
         const mazoMaestro = obtenerMazoBarajado();
 
-        // Repartir cartas a cada jugador
         jugadoresEnSala.forEach(jugador => {
             const mano = [];
             for (let i = 0; i < configuracionJuego.cartasPorJugador; i++) {
@@ -281,7 +261,6 @@ estadoJuegoRef.on('value', (snapshot) => {
     const bloqueCartas   = document.getElementById('interfaz-cartas');
     const bloqueVictoria = document.getElementById('interfaz-victoria-mano');
 
-    // --- Jugador abandonó ---
     if (estado && estado.abandonado) {
         bloqueCartas.classList.add('oculta');
         bloqueVictoria.classList.remove('oculta');
@@ -294,7 +273,6 @@ estadoJuegoRef.on('value', (snapshot) => {
         return;
     }
 
-    // --- Empate técnico ---
     if (estado && estado.empate) {
         bloqueCartas.classList.add('oculta');
         bloqueVictoria.classList.remove('oculta');
@@ -308,7 +286,6 @@ estadoJuegoRef.on('value', (snapshot) => {
         return;
     }
 
-    // --- Sin estado o partida no iniciada: volver al lobby ---
     if (!estado || !estado.iniciado) {
         if (juegoIniciadoVisualmente) {
             juegoIniciadoVisualmente = false;
@@ -322,7 +299,6 @@ estadoJuegoRef.on('value', (snapshot) => {
             pantallaLobby.classList.remove('oculta');
             pantallaLobby.classList.add('activa');
 
-            // Resetear estado del botón listo
             miJugador.listo = false;
             btnListo.innerText = "Estoy Listo";
             btnListo.style.backgroundColor = "";
@@ -331,7 +307,6 @@ estadoJuegoRef.on('value', (snapshot) => {
         return;
     }
 
-    // --- Victoria ---
     if (estado.victoria) {
         bloqueCartas.classList.add('oculta');
         bloqueVictoria.classList.remove('oculta');
@@ -346,7 +321,6 @@ estadoJuegoRef.on('value', (snapshot) => {
         return;
     }
 
-    // --- Partida iniciada: transición a pantalla de juego ---
     if (estado.iniciado === true && !juegoIniciadoVisualmente) {
         partidaIniciada = true;
         juegoIniciadoVisualmente = true;
@@ -364,20 +338,17 @@ estadoJuegoRef.on('value', (snapshot) => {
 });
 
 // ============================================
-// VOLVER AL LOBBY (solo el anfitrión)
+// VOLVER AL LOBBY
 // ============================================
 window.volverAlLobby = function () {
     if (jugadoresEnSala.length === 0 || jugadoresEnSala[0].id !== miJugadorId) return;
 
-    // Resetear la bandera para que la próxima vez que quede solo en sala
-    // pueda volver a limpiar el estado correctamente
     yaLimpioSala = false;
 
     estadoJuegoRef.set(null);
     baseDatos.ref('sala_activa/tablero').set(null);
     nombresEquiposRef.remove();
     baseDatos.ref('sala_activa/mazo').set(null);
-    // Limpiar el último Jack para que no se dispare en la siguiente partida
     baseDatos.ref('sala_activa/estado/ultimoJack').remove();
     jugadoresEnSala.forEach(j => {
         baseDatos.ref(`sala_activa/jugadores/${j.id}/mano`).remove();
@@ -386,15 +357,11 @@ window.volverAlLobby = function () {
 
 // ============================================
 // LIMPIEZA AL CERRAR / RECARGAR LA PÁGINA
-// Garantiza que el jugador se elimine de Firebase
-// incluso si onDisconnect no alcanza a ejecutarse.
 // ============================================
 window.addEventListener('beforeunload', () => {
-    // Eliminación síncrona (best-effort) al cerrar la pestaña
     if (miJugadorRef) {
         miJugadorRef.remove();
     }
-    // Limpiar el ID guardado para que la próxima sesión empiece limpia
     localStorage.removeItem('sequence_jugador_id');
 });
 
