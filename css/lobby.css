@@ -1,4 +1,8 @@
 /* css/lobby.css */
+
+/* ============================================
+   CAJAS DE FORMULARIO Y LOBBY
+   ============================================ */
 .caja-formulario, .caja-lobby {
     background: linear-gradient(145deg, #2c3e50, #34495e);
     padding: 30px;
@@ -10,7 +14,9 @@
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 
-/* Títulos principales de cada pantalla */
+/* ============================================
+   TÍTULOS
+   ============================================ */
 #pantalla-login h1,
 #pantalla-lobby h1 {
     font-size: 2.2rem;
@@ -24,6 +30,9 @@
     margin-bottom: 15px;
 }
 
+/* ============================================
+   INPUT DE NOMBRE
+   ============================================ */
 #input-nombre {
     padding: 12px 15px;
     font-size: 1.1rem;
@@ -41,7 +50,10 @@
     border-color: #f1c40f;
 }
 
-.seleccion-equipo { 
+/* ============================================
+   SELECCIÓN DE EQUIPO
+   ============================================ */
+.seleccion-equipo {
     display: flex;
     justify-content: center;
     gap: 12px;
@@ -49,7 +61,7 @@
     flex-wrap: wrap;
 }
 
-.btn-color { 
+.btn-color {
     color: white;
     border: 3px solid transparent;
     padding: 10px 22px;
@@ -59,21 +71,23 @@
     min-width: 80px;
 }
 
-.btn-color:hover { 
+.btn-color:hover {
     transform: scale(1.08);
 }
 
-/* Feedback visual al seleccionar color */
 .btn-color.color-activo {
     border-color: white !important;
     box-shadow: 0 0 15px rgba(255,255,255,0.3);
     transform: scale(1.1);
 }
 
-.btn-color.rojo { background-color: #e74c3c; }
-.btn-color.azul { background-color: #3498db; }
+.btn-color.rojo  { background-color: #e74c3c; }
+.btn-color.azul  { background-color: #3498db; }
 .btn-color.verde { background-color: #2ecc71; }
 
+/* ============================================
+   LISTA DE JUGADORES
+   ============================================ */
 #lista-jugadores {
     list-style: none;
     padding: 12px;
@@ -94,7 +108,9 @@
     border-bottom: none;
 }
 
-/* Botón Listo: color verde inicial */
+/* ============================================
+   BOTÓN LISTO
+   ============================================ */
 #btn-listo {
     background-color: #2ecc71;
     margin-top: 10px;
@@ -105,20 +121,24 @@
     box-shadow: 0 4px 12px rgba(46, 204, 113, 0.4);
 }
 
-.alerta { 
+/* ============================================
+   MENSAJES DE VALIDACIÓN
+   ============================================ */
+.alerta {
     color: #e74c3c;
-    font-weight: bold; 
+    font-weight: bold;
     margin-top: 15px;
     font-size: 0.9rem;
     min-height: 1.2em;
 }
 
-/* Mensaje de validación positivo */
 .alerta.listo {
     color: #2ecc71;
 }
 
-/* Responsive para pantallas muy pequeñas */
+/* ============================================
+   RESPONSIVE
+   ============================================ */
 @media (max-width: 360px) {
     .caja-formulario, .caja-lobby {
         padding: 20px 15px;

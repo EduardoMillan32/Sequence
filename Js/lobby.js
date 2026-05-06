@@ -8,14 +8,14 @@ let juegoIniciadoVisualmente = false;
 let partidaIniciada = false;
 let yaLimpioSala = false;
 
-const salaRef        = baseDatos.ref('sala_activa/jugadores');
-const estadoJuegoRef = baseDatos.ref('sala_activa/estado');
+const salaRef           = baseDatos.ref('sala_activa/jugadores');
+const estadoJuegoRef    = baseDatos.ref('sala_activa/estado');
 const nombresEquiposRef = baseDatos.ref('sala_activa/nombresEquipos');
 
-const pantallaLogin  = document.getElementById('pantalla-login');
-const pantallaLobby  = document.getElementById('pantalla-lobby');
-const pantallaJuego  = document.getElementById('pantalla-juego');
-const btnListo       = document.getElementById('btn-listo');
+const pantallaLogin     = document.getElementById('pantalla-login');
+const pantallaLobby     = document.getElementById('pantalla-lobby');
+const pantallaJuego     = document.getElementById('pantalla-juego');
+const btnListo          = document.getElementById('btn-listo');
 const mensajeValidacion = document.getElementById('mensaje-validacion');
 
 let nombresEquipos = { rojo: "Rojo", azul: "Azul", verde: "Verde" };
@@ -84,8 +84,6 @@ function seleccionarColor(color) {
     const titulo = document.getElementById('titulo-equipo');
     titulo.innerHTML = `Equipo: <span id="nombre-editable" contenteditable="true" spellcheck="false" style="outline: none;">${nombreMostrar}</span>`;
 
-    // Usar oninput en lugar de addEventListener para evitar listeners duplicados
-    // al cambiar de color múltiples veces
     document.getElementById('nombre-editable').oninput = function () {
         cambiarNombreEquipo(this.innerText);
     };
@@ -217,15 +215,15 @@ function verificarReglasParaIniciar() {
         baseDatos.ref('sala_activa/tablero').set(null);
 
         const verdes = jugadoresEnSala.filter(j => j.color === 'verde');
-        const azules  = jugadoresEnSala.filter(j => j.color === 'azul');
-        const rojos   = jugadoresEnSala.filter(j => j.color === 'rojo');
+        const azules = jugadoresEnSala.filter(j => j.color === 'azul');
+        const rojos  = jugadoresEnSala.filter(j => j.color === 'rojo');
 
         const ordenTurnos = [];
         const maxPorEquipo = Math.max(verdes.length, azules.length, rojos.length);
         for (let i = 0; i < maxPorEquipo; i++) {
             if (verdes[i]) ordenTurnos.push(verdes[i].id);
-            if (azules[i])  ordenTurnos.push(azules[i].id);
-            if (rojos[i])   ordenTurnos.push(rojos[i].id);
+            if (azules[i]) ordenTurnos.push(azules[i].id);
+            if (rojos[i])  ordenTurnos.push(rojos[i].id);
         }
 
         const indiceAleatorio = Math.floor(Math.random() * ordenTurnos.length);
@@ -268,11 +266,9 @@ estadoJuegoRef.on('value', (snapshot) => {
     const bloqueCartas   = document.getElementById('interfaz-cartas');
     const bloqueVictoria = document.getElementById('interfaz-victoria-mano');
 
-    // Si los elementos del juego no existen aún (jugador en lobby), ignorar
     if (!bloqueCartas || !bloqueVictoria) return;
 
     if (estado && estado.abandonado) {
-        // Solo mostrar si el juego ya estaba iniciado visualmente
         if (!juegoIniciadoVisualmente) return;
         bloqueCartas.classList.add('oculta');
         bloqueVictoria.classList.remove('oculta');
@@ -294,8 +290,8 @@ estadoJuegoRef.on('value', (snapshot) => {
         textoWin.style.color = "#bdc3c7";
         const btnRevancha = document.getElementById('btn-revancha');
         const esAnfitrion = jugadoresEnSala.length > 0 && jugadoresEnSala[0].id === miJugadorId;
-        btnRevancha.innerText  = esAnfitrion ? "Volver al Lobby 🔄" : "Esperando al anfitrión...";
-        btnRevancha.disabled   = !esAnfitrion;
+        btnRevancha.innerText = esAnfitrion ? "Volver al Lobby 🔄" : "Esperando al anfitrión...";
+        btnRevancha.disabled  = !esAnfitrion;
         return;
     }
 
@@ -338,12 +334,7 @@ estadoJuegoRef.on('value', (snapshot) => {
         partidaIniciada = true;
         juegoIniciadoVisualmente = true;
 
-        // reiniciarEstadoJuegoLocal() llama a generarTablero() que crea el DOM del tablero.
-        // Es CRÍTICO llamarlo ANTES de iniciarListenerTablero() para que las casillas
-        // existan cuando lleguen los primeros datos de Firebase.
         reiniciarEstadoJuegoLocal();
-
-        // Activar el listener del tablero DESPUÉS de que el DOM esté listo
         iniciarListenerTablero();
 
         inicializarReglas(estado.jugadoresTotales, estado.equiposTotales);
@@ -366,7 +357,6 @@ window.volverAlLobby = function () {
 
     yaLimpioSala = false;
 
-    // Desactivar el listener del tablero para que se pueda re-registrar en la próxima partida
     if (typeof tableroListenerActivo !== 'undefined') {
         baseDatos.ref('sala_activa/tablero').off('value');
         tableroListenerActivo = false;

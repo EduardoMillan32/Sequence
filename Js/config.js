@@ -25,11 +25,11 @@ function inicializarReglas(jugadoresTotales, equiposTotales) {
     configuracionJuego.numeroEquipos = equiposTotales;
     configuracionJuego.sequencesParaGanar = (equiposTotales === 3) ? 1 : 2;
 
-    if (jugadoresTotales === 2)                                     configuracionJuego.cartasPorJugador = 7;
-    else if (jugadoresTotales >= 3 && jugadoresTotales <= 4)        configuracionJuego.cartasPorJugador = 6;
-    else if (jugadoresTotales === 6)                                configuracionJuego.cartasPorJugador = 5;
-    else if (jugadoresTotales >= 8 && jugadoresTotales <= 9)        configuracionJuego.cartasPorJugador = 4;
-    else if (jugadoresTotales >= 10 && jugadoresTotales <= 12)      configuracionJuego.cartasPorJugador = 3;
+    if (jugadoresTotales === 2)                                configuracionJuego.cartasPorJugador = 7;
+    else if (jugadoresTotales >= 3 && jugadoresTotales <= 4)   configuracionJuego.cartasPorJugador = 6;
+    else if (jugadoresTotales === 6)                           configuracionJuego.cartasPorJugador = 5;
+    else if (jugadoresTotales >= 8 && jugadoresTotales <= 9)   configuracionJuego.cartasPorJugador = 4;
+    else if (jugadoresTotales >= 10 && jugadoresTotales <= 12) configuracionJuego.cartasPorJugador = 3;
 
     console.log("Reglas configuradas:", configuracionJuego);
 }

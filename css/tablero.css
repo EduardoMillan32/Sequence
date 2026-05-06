@@ -1,51 +1,47 @@
 /* css/tablero.css */
 #contenedor-juego {
     display: flex;
-    flex-direction: row; 
+    flex-direction: row;
     justify-content: center;
     align-items: flex-start;
     padding: 10px;
     width: 100%;
-    /* Asegura que el tablero no quede tapado por el panel fijo inferior */
     padding-bottom: 0;
 }
 
 /* ============================================
-   TABLERO RESPONSIVE MEJORADO
+   TABLERO
    ============================================ */
 .tablero {
     display: grid;
-    grid-template-columns: repeat(10, 1fr); 
-    gap: 2px; 
-    background-color: #1a472a; 
+    grid-template-columns: repeat(10, 1fr);
+    gap: 2px;
+    background-color: #1a472a;
     padding: 6px;
     width: 95vw;
-    max-width: 650px; 
+    max-width: 650px;
     border: 5px solid #3e2723;
     border-radius: 8px;
     margin: 10px auto;
-    margin-bottom: 180px; 
+    margin-bottom: 180px;
     box-shadow: 0 8px 25px rgba(0,0,0,0.6);
 }
 
+/* ============================================
+   CASILLAS
+   ============================================ */
 .casilla {
     background-color: white;
-    aspect-ratio: 2.5 / 3.5; 
+    aspect-ratio: 2.5 / 3.5;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 3px;
-    /* overflow: hidden es necesario para que las fichas (position:absolute)
-       no se desplacen fuera de la casilla durante animaciones de transform.
-       El bug de fichas invisibles se resuelve en JS limpiando los estilos
-       inline correctamente con transitionend. */
     overflow: hidden;
     position: relative;
     box-sizing: border-box;
     cursor: pointer;
     transition: transform 0.15s ease;
-    /* isolation:isolate crea un nuevo stacking context, evitando que el
-       transform de hover afecte el posicionamiento de las fichas hijas */
     isolation: isolate;
 }
 
@@ -53,24 +49,17 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    pointer-events: none; 
+    pointer-events: none;
     -webkit-user-drag: none;
     border-radius: 3px;
 }
 
 @media (hover: hover) {
     .casilla:hover {
-        /* Usamos scale() en transform pero con transform-origin center
-           y z-index alto para que la casilla se agrande sobre las vecinas.
-           isolation:isolate en .casilla garantiza que el stacking context
-           de la ficha hija no se vea afectado por este transform. */
         transform: scale(1.08);
         transform-origin: center center;
         box-shadow: 0 0 8px rgba(241, 196, 15, 0.6);
         z-index: 20;
-        /* overflow debe seguir siendo hidden para contener la ficha,
-           pero el transform de la casilla no desplaza la ficha porque
-           la ficha es hija del elemento transformado (se transforma junto con él) */
     }
 }
 .casilla:active { transform: scale(0.95); transform-origin: center center; }
@@ -82,13 +71,11 @@
     cursor: default;
 }
 
-/* FICHAS */
+/* ============================================
+   FICHAS
+   ============================================ */
 .ficha {
     position: absolute;
-    /* Centrado explícito con top/left/transform para que la ficha siempre
-       esté centrada en la casilla, independientemente del flujo del documento
-       o de reflows causados por animaciones CSS. Sin esto, la ficha puede
-       aparecer desplazada a top:0/left:0 durante un reflow. */
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -98,21 +85,13 @@
     z-index: 10;
     box-shadow: inset 0 0 8px rgba(0,0,0,0.5), 0 2px 5px rgba(0,0,0,0.8);
     border: 2px solid white;
-    /* box-sizing: border-box garantiza que cambiar border-width NO cambia
-       el tamaño total de la ficha, evitando que se desplace dentro de la casilla */
     box-sizing: border-box;
     pointer-events: none;
-    /* will-change crea una capa de composición separada, evitando que
-       las animaciones de otras fichas afecten el rendering de esta */
     will-change: transform, box-shadow;
 }
 .ficha-rojo  { background: radial-gradient(circle at 35% 35%, #ff6b6b, #c0392b); }
 .ficha-azul  { background: radial-gradient(circle at 35% 35%, #74b9ff, #2980b9); }
 .ficha-verde { background: radial-gradient(circle at 35% 35%, #55efc4, #00b894); }
-
-/* NOTA: La clase .ficha.entrando ya no se usa — la animación de entrada
-   se maneja con estilos inline en JS (translate + scale) para evitar
-   conflictos con el transform: translate(-50%,-50%) del centrado. */
 
 /* ============================================
    SEQUENCES PROTEGIDOS
@@ -126,18 +105,11 @@
 @keyframes brillar-verde { from { box-shadow: inset 0 0 5px #2ecc71, 0 0 5px #2ecc71; } to { box-shadow: inset 0 0 15px #2ecc71, 0 0 15px #2ecc71; } }
 
 /* ============================================
-   ÚLTIMA FICHA COLOCADA — brillo pulsante suave
-   El box-shadow SOLO usa valores inset para no salir de los límites
-   de la casilla padre (overflow:hidden). Los valores externos causaban
-   que el navegador hiciera un clip incorrecto al interrumpir la animación.
+   ÚLTIMA FICHA COLOCADA
    ============================================ */
 .ficha.ultima-colocada {
-    /* NO cambiamos border-width ni ninguna propiedad que afecte la geometría
-       de la ficha — solo animamos box-shadow (inset) para evitar cualquier
-       desplazamiento o reflow durante la animación */
     animation: pulso-ultima 1.8s ease-in-out infinite;
     border-color: #f1c40f;
-    /* border-width se mantiene igual (2px) para no mover la ficha */
 }
 
 @keyframes pulso-ultima {
@@ -147,7 +119,7 @@
 }
 
 /* ============================================
-   ÚLTIMA FICHA REMOVIDA — brillo rojo pulsante
+   ÚLTIMA FICHA REMOVIDA
    ============================================ */
 .casilla.ultima-removida::after {
     content: "✕";
@@ -184,7 +156,7 @@
 }
 
 /* ============================================
-   OVERLAY DE JACK — aparece sobre el tablero
+   OVERLAY DE JACK
    ============================================ */
 #overlay-jack {
     position: fixed;
@@ -218,11 +190,12 @@
     100% { transform: scale(1)   rotate(0deg);  opacity: 1; }
 }
 
-/* Fondo semitransparente del overlay según tipo de jack */
 #overlay-jack.jack-add    { background: radial-gradient(ellipse at center, rgba(39,174,96,0.4)  0%, rgba(0,0,0,0.65) 70%); }
 #overlay-jack.jack-remove { background: radial-gradient(ellipse at center, rgba(192,57,43,0.4)  0%, rgba(0,0,0,0.65) 70%); }
 
-/* RESPONSIVE ADAPTATIONS */
+/* ============================================
+   RESPONSIVE
+   ============================================ */
 @media (min-width: 768px) {
     .tablero { max-width: min(650px, 70vh); gap: 3px; padding: 8px; margin-bottom: 200px; }
     .esquina { font-size: 2rem; }

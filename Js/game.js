@@ -61,7 +61,7 @@ baseDatos.ref('sala_activa/estado/historial').on('child_added', (snapshot) => {
 });
 
 baseDatos.ref('sala_activa/mazo').on('value', (snapshot) => {
-    const mazo    = snapshot.val() || [];
+    const mazo     = snapshot.val() || [];
     const contador = document.getElementById('contador-mazo');
     if (contador) contador.innerText = mazo.length;
 });
@@ -78,15 +78,12 @@ baseDatos.ref('sala_activa/estado/turnosPasados').on('value', (snapshot) => {
 
     if (!juegoIniciadoVisualmente) return;
     if (jugadoresEnSala.length === 0) return;
-    // Solo el anfitrión (primer jugador) decide el empate/victoria
     if (jugadoresEnSala[0].id !== miJugadorId) return;
-    // Se necesita que TODOS los jugadores hayan pasado consecutivamente
     if (pases < jugadoresEnSala.length) return;
 
-    // Verificar también que el mazo esté vacío antes de declarar muerte súbita
     baseDatos.ref('sala_activa/mazo').once('value', (mazoSnap) => {
         const mazo = mazoSnap.val() || [];
-        if (mazo.length > 0) return; // Aún hay cartas, no es muerte súbita
+        if (mazo.length > 0) return;
 
         let maxSequences     = 0;
         let equipoGanador    = null;
@@ -143,11 +140,6 @@ baseDatos.ref('sala_activa/estado/turnoActual').on('value', (snapshot) => {
     }
 });
 
-// Usamos on('value') sobre el tablero completo para recibir el estado real del servidor.
-// Para evitar que los optimistic updates locales de Firebase causen parpadeos o
-// desapariciones de fichas, RECONSTRUIMOS el tablero completo desde cero en cada
-// snapshot, en lugar de hacer un diff. El guard de casillas existentes en el DOM
-// y el guard de ficha ya existente en colocarFichaVisual evitan duplicados.
 let tableroListenerActivo = false;
 
 function iniciarListenerTablero() {
@@ -155,12 +147,9 @@ function iniciarListenerTablero() {
     tableroListenerActivo = true;
 
     tableroRef.on('value', (snapshot) => {
-        // Esperar a que el DOM del tablero esté completamente listo (100 casillas = 10x10)
         const casillas = document.querySelectorAll('.casilla');
         if (casillas.length < TAMANO_TABLERO * TAMANO_TABLERO) return;
 
-        // Normalizar el valor de Firebase a un objeto plano { indice: color },
-        // filtrando nulls (Firebase puede devolver Array cuando las claves son numéricas).
         const rawVal = snapshot.val();
         const estadoServidor = {};
         if (rawVal !== null && rawVal !== undefined) {
@@ -179,14 +168,12 @@ function iniciarListenerTablero() {
             }
         }
 
-        // 1. Quitar fichas que el servidor ya no tiene
         casillas.forEach((casilla, idx) => {
             if (casilla.querySelector('.ficha') && !(idx in estadoServidor)) {
                 quitarFichaVisual(idx);
             }
         });
 
-        // 2. Añadir fichas que el servidor tiene y el DOM no muestra aún
         for (const idx in estadoServidor) {
             const indice = Number(idx);
             if (!casillas[indice].querySelector('.ficha')) {
@@ -368,7 +355,6 @@ function intentarPonerFicha(indiceTablero, cartaTablero) {
     if (cartaEnMano.startsWith("J2")) {
         if (!tieneFicha) return mostrarToast("Usa el Jack sobre una ficha del oponente.", "warning");
 
-        // No se puede usar sobre fichas propias
         if (tieneFicha.classList.contains(`ficha-${miJugador.color}`)) {
             return mostrarToast("No puedes quitar tus propias fichas con el Jack de 1 Ojo.", "error");
         }
@@ -383,8 +369,6 @@ function intentarPonerFicha(indiceTablero, cartaTablero) {
 
         mostrarOverlayJack('remove', cartaEnMano);
 
-        // Escritura atómica multi-path: evita rollbacks de Firebase que disparen
-        // child_removed/child_added incorrectamente en otras casillas del tablero
         actualizarManoTrasJugadaConAccion(
             `❌ ${nombreColor} quitó una ficha con su Jack de 1 Ojo.`,
             { tipo: 'remove', indice: indiceTablero, jackCarta: cartaEnMano }
@@ -408,8 +392,6 @@ function intentarPonerFicha(indiceTablero, cartaTablero) {
         ? `🃏 ${nombreColor} usó un Comodín (2 Ojos) en ${cartaTraducida}.`
         : `🃏 ${nombreColor} colocó ficha en ${cartaTraducida}.`;
 
-    // Escritura atómica multi-path: evita rollbacks de Firebase que disparen
-    // child_removed/child_added incorrectamente en otras casillas del tablero
     actualizarManoTrasJugadaConAccion(
         msj,
         { tipo: 'add', indice: indiceTablero, color: miJugador.color, jackCarta: cartaEnMano.startsWith("J1") ? cartaEnMano : null }
@@ -420,44 +402,28 @@ function colocarFichaVisual(indice, color) {
     const casillas = document.querySelectorAll('.casilla');
     if (casillas[indice].querySelector('.ficha')) return;
 
-    // Limpiar el efecto de "última colocada" de la ficha anterior
     if (timerUltimaColocada) { clearTimeout(timerUltimaColocada); timerUltimaColocada = null; }
     if (ultimaFichaColocadaEl) {
         ultimaFichaColocadaEl.classList.remove('ultima-colocada');
-        // Forzar repaint inmediato para que el navegador actualice el área
-        // clipeada por overflow:hidden del padre. Sin esto, la ficha puede
-        // quedar invisible hasta el próximo evento de hover/reflow.
         void ultimaFichaColocadaEl.offsetHeight;
         ultimaFichaColocadaEl = null;
     }
 
     const ficha = document.createElement('div');
     ficha.classList.add('ficha', `ficha-${color}`);
-    // Estado inicial: centrada pero invisible (scale 0).
-    // IMPORTANTE: incluir translate(-50%,-50%) para mantener el centrado
-    // definido en CSS — si solo ponemos scale(0), el translate se pierde
-    // y la ficha aparece en top:0/left:0 durante la animación de entrada.
     ficha.style.transform = 'translate(-50%, -50%) scale(0)';
     ficha.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
     casillas[indice].appendChild(ficha);
 
-    // Un único requestAnimationFrame es suficiente para que el navegador
-    // registre el estado inicial antes de iniciar la transición
     requestAnimationFrame(() => {
         ficha.style.transform = 'translate(-50%, -50%) scale(1)';
 
-        // Al terminar la transición de entrada, limpiar los estilos inline
-        // para que el CSS tome el control (transform: translate(-50%,-50%))
         ficha.addEventListener('transitionend', () => {
             if (!ficha.isConnected) return;
 
-            // Limpiar estilos inline — el CSS de .ficha ya tiene
-            // transform: translate(-50%, -50%) que tomará el control
             ficha.style.transform = '';
             ficha.style.transition = '';
 
-            // Limpiar cualquier "última colocada" que haya llegado mientras
-            // estábamos en la transición de entrada
             if (ultimaFichaColocadaEl && ultimaFichaColocadaEl !== ficha) {
                 ultimaFichaColocadaEl.classList.remove('ultima-colocada');
             }
@@ -486,7 +452,6 @@ function quitarFichaVisual(indice) {
     }
 
     ficha.style.transition = 'transform 0.2s ease-in, opacity 0.2s ease-in';
-    // Incluir translate(-50%,-50%) para mantener el centrado durante la animación de salida
     ficha.style.transform  = 'translate(-50%, -50%) scale(0)';
     ficha.style.opacity    = '0';
     ficha.addEventListener('transitionend', () => {
@@ -505,16 +470,11 @@ function quitarFichaVisual(indice) {
 
 // ============================================
 // ESCRITURA ATÓMICA MULTI-PATH TRAS JUGADA
-// Consolida tablero + mazo + mano + turno en un solo update de Firebase,
-// eliminando los rollbacks optimistas que causaban child_removed espurios.
-// accion: { tipo: 'add'|'remove', indice, color?, jackCarta? }
 // ============================================
 function actualizarManoTrasJugadaConAccion(mensajeHistorial, accion) {
-    // 1. Quitar la carta jugada de la mano local
     manoPropia.splice(cartaSeleccionadaIdx, 1);
     cartaSeleccionadaIdx = null;
 
-    // 2. Leer el mazo actual una sola vez (sin transacción, sin rollback)
     baseDatos.ref('sala_activa/mazo').once('value', (mazoSnap) => {
         const mazoActual = mazoSnap.val() || [];
         let cartaNueva = null;
@@ -528,17 +488,12 @@ function actualizarManoTrasJugadaConAccion(mensajeHistorial, accion) {
             manoPropia.push(cartaNueva);
         }
 
-        // 3. Calcular el siguiente turno
         const indiceActual    = listaOrdenTurnos.indexOf(miJugadorId);
         const siguienteIndice = (indiceActual + 1) % listaOrdenTurnos.length;
         const siguienteTurno  = listaOrdenTurnos[siguienteIndice];
 
-        // 4. Clave única para el historial
         const historialKey = Date.now().toString();
 
-        // 5a. Update CRÍTICO: tablero + turno + mano + historial
-        //     NO incluimos el mazo aquí para evitar que Firebase haga rollback
-        //     del nodo tablero al procesar el array del mazo localmente.
         const updatesCriticos = {};
 
         if (accion.tipo === 'add') {
@@ -566,11 +521,9 @@ function actualizarManoTrasJugadaConAccion(mensajeHistorial, accion) {
         updatesCriticos['sala_activa/estado/turnosPasados']             = 0;
         updatesCriticos[`sala_activa/estado/historial/${historialKey}`] = mensajeHistorial;
 
-        // 5b. Update SECUNDARIO: mazo (separado para no contaminar el nodo tablero)
         const updatesSecundarios = {};
         updatesSecundarios['sala_activa/mazo'] = mazoActual;
 
-        // 6. Primero escribir lo crítico (tablero, turno, mano), luego el mazo
         baseDatos.ref().update(updatesCriticos).then(() => {
             baseDatos.ref().update(updatesSecundarios);
         });
@@ -638,8 +591,6 @@ function marcarSequence(indices, colorJugador) {
     const claveCombo = [...indices].sort((a, b) => a - b).join(',');
     if (combosYaMarcados.has(claveCombo)) return;
 
-    // Un sequence válido puede compartir máximo 1 ficha ya protegida con otro
-    // sequence del mismo equipo (las esquinas libres no cuentan como protegidas).
     let fichasNuevas = 0;
     indices.forEach(indice => {
         if (!casillas[indice].classList.contains(`protegida-${colorJugador}`)) {
@@ -647,7 +598,6 @@ function marcarSequence(indices, colorJugador) {
         }
     });
 
-    // Se requieren al menos 4 fichas nuevas (puede compartir 1 con otro sequence propio)
     if (fichasNuevas < 4) return;
 
     combosYaMarcados.add(claveCombo);
@@ -679,7 +629,6 @@ function descartarYRobarSinPasarTurno(cartaDescartada) {
     const historialKey     = Date.now().toString();
     const mensajeHistorial = `🗑️ ${nombreColor} descartó un ${cartaTraducida} muerto.`;
 
-    // Escritura atómica para evitar rollbacks que afecten el tablero
     baseDatos.ref('sala_activa/mazo').once('value', (mazoSnap) => {
         const mazoActual = mazoSnap.val() || [];
         let cartaNueva = null;
@@ -694,10 +643,9 @@ function descartarYRobarSinPasarTurno(cartaDescartada) {
         }
 
         const updates = {};
-        updates['sala_activa/mazo']                                 = mazoActual;
-        updates[`sala_activa/jugadores/${miJugadorId}/mano`]        = manoPropia;
-        updates[`sala_activa/estado/historial/${historialKey}`]     = mensajeHistorial;
-        // No cambia el turno ni turnosPasados al descartar
+        updates['sala_activa/mazo']                             = mazoActual;
+        updates[`sala_activa/jugadores/${miJugadorId}/mano`]    = manoPropia;
+        updates[`sala_activa/estado/historial/${historialKey}`] = mensajeHistorial;
 
         baseDatos.ref().update(updates).then(() => {
             renderizarMano();
