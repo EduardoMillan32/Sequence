@@ -28,6 +28,13 @@ body {
     justify-content: center;
 }
 
+/* La pantalla de juego no centra verticalmente: el tablero debe quedar arriba
+   y ser desplazable por encima del panel fijo inferior */
+#pantalla-juego.activa {
+    justify-content: flex-start;
+    overflow-y: auto;
+}
+
 /* .oculta oculta elementos genéricos (no pantallas) */
 .oculta { display: none !important; }
 

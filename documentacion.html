@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentación — Sequence Multijugador</title>
+    <style>
+        :root {
+            --bg:        #0f1117;
+            --surface:   #1a1d27;
+            --surface2:  #22263a;
+            --border:    #2e3350;
+            --accent:    #f0c040;
+            --accent2:   #3b82f6;
+            --green:     #2ecc71;
+            --red:       #e74c3c;
+            --text:      #e2e8f0;
+            --muted:     #8892a4;
+            --code-bg:   #0d1117;
+            --code-border:#30363d;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+
+        /* ── LAYOUT ── */
+        .layout { display: flex; min-height: 100vh; }
+
+        /* ── SIDEBAR ── */
+        nav {
+            width: 280px;
+            min-width: 280px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            padding: 24px 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        nav .logo {
+            padding: 0 24px 24px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 16px;
+        }
+
+        nav .logo h2 {
+            font-size: 1.1rem;
+            color: var(--accent);
+            letter-spacing: 0.5px;
+        }
+
+        nav .logo p {
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        nav ul { list-style: none; }
+
+        nav ul li a {
+            display: block;
+            padding: 7px 24px;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.15s, background 0.15s;
+            border-left: 3px solid transparent;
+        }
+
+        nav ul li a:hover {
+            color: var(--text);
+            background: var(--surface2);
+            border-left-color: var(--accent);
+        }
+
+        nav ul li.section-title {
+            padding: 16px 24px 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        nav ul li a.sub { padding-left: 40px; font-size: 0.8rem; }
+
+        /* ── MAIN ── */
+        main {
+            flex: 1;
+            padding: 48px 64px;
+            max-width: 960px;
+        }
+
+        /* ── HEADINGS ── */
+        h1 {
+            font-size: 2.2rem;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            color: var(--accent);
+            margin: 56px 0 16px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        h3 {
+            font-size: 1.1rem;
+            color: var(--accent2);
+            margin: 32px 0 12px;
+        }
+
+        h4 {
+            font-size: 0.95rem;
+            color: var(--green);
+            margin: 20px 0 8px;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+        }
+
+        /* ── TEXT ── */
+        p { margin-bottom: 12px; color: var(--text); }
+
+        .lead {
+            font-size: 1.05rem;
+            color: var(--muted);
+            margin-bottom: 32px;
+            line-height: 1.8;
+        }
+
+        /* ── CODE ── */
+        code {
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.85em;
+            background: var(--code-bg);
+            border: 1px solid var(--code-border);
+            border-radius: 4px;
+            padding: 2px 6px;
+            color: #79c0ff;
+        }
+
+        pre {
+            background: var(--code-bg);
+            border: 1px solid var(--code-border);
+            border-radius: 8px;
+            padding: 20px 24px;
+            overflow-x: auto;
+            margin: 16px 0 24px;
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.82rem;
+            line-height: 1.6;
+        }
+
+        pre .kw  { color: #ff7b72; }   /* keywords */
+        pre .fn  { color: #d2a8ff; }   /* functions */
+        pre .str { color: #a5d6ff; }   /* strings */
+        pre .num { color: #79c0ff; }   /* numbers */
+        pre .cmt { color: #8b949e; font-style: italic; } /* comments */
+        pre .var { color: #ffa657; }   /* variables */
+        pre .op  { color: #e2e8f0; }   /* operators */
+
+        /* ── CARDS ── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px 24px;
+            margin: 16px 0;
+        }
+
+        .card.warning {
+            border-left: 4px solid var(--accent);
+            background: rgba(240,192,64,0.05);
+        }
+
+        .card.info {
+            border-left: 4px solid var(--accent2);
+            background: rgba(59,130,246,0.05);
+        }
+
+        .card.success {
+            border-left: 4px solid var(--green);
+            background: rgba(46,204,113,0.05);
+        }
+
+        .card.danger {
+            border-left: 4px solid var(--red);
+            background: rgba(231,76,60,0.05);
+        }
+
+        /* ── TABLES ── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0 24px;
+            font-size: 0.88rem;
+        }
+
+        th {
+            background: var(--surface2);
+            color: var(--accent);
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 9px 14px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        tr:hover td { background: var(--surface2); }
+
+        td code { font-size: 0.8em; }
+
+        /* ── BADGES ── */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .badge-yellow { background: rgba(240,192,64,0.15); color: var(--accent); border: 1px solid rgba(240,192,64,0.3); }
+        .badge-blue   { background: rgba(59,130,246,0.15); color: #60a5fa;       border: 1px solid rgba(59,130,246,0.3); }
+        .badge-green  { background: rgba(46,204,113,0.15); color: var(--green);  border: 1px solid rgba(46,204,113,0.3); }
+        .badge-red    { background: rgba(231,76,60,0.15);  color: #f87171;       border: 1px solid rgba(231,76,60,0.3); }
+
+        /* ── DIAGRAM ── */
+        .diagram {
+            background: var(--code-bg);
+            border: 1px solid var(--code-border);
+            border-radius: 8px;
+            padding: 24px;
+            font-family: 'Cascadia Code', monospace;
+            font-size: 0.8rem;
+            line-height: 1.8;
+            color: #8b949e;
+            margin: 16px 0 24px;
+            overflow-x: auto;
+        }
+
+        .diagram .node  { color: #d2a8ff; }
+        .diagram .arrow { color: #8b949e; }
+        .diagram .label { color: #a5d6ff; }
+        .diagram .file  { color: var(--accent); font-weight: bold; }
+
+        /* ── DIVIDER ── */
+        hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 40px 0;
+        }
+
+        /* ── HEADER HERO ── */
+        .hero {
+            background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 40px;
+            margin-bottom: 48px;
+        }
+
+        .hero .subtitle {
+            color: var(--muted);
+            font-size: 0.9rem;
+            margin-top: 8px;
+        }
+
+        .hero .tags { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+        /* ── FILE HEADER ── */
+        .file-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 20px;
+            margin: 40px 0 20px;
+        }
+
+        .file-header .icon { font-size: 1.4rem; }
+
+        .file-header .info h3 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--accent);
+            font-family: 'Cascadia Code', monospace;
+        }
+
+        .file-header .info p {
+            margin: 2px 0 0;
+            font-size: 0.78rem;
+            color: var(--muted);
+        }
+
+        /* ── FUNCTION BLOCK ── */
+        .fn-block {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .fn-block .fn-header {
+            background: var(--surface2);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .fn-block .fn-header code {
+            font-size: 0.9rem;
+            background: none;
+            border: none;
+            color: #d2a8ff;
+            padding: 0;
+        }
+
+        .fn-block .fn-body {
+            padding: 16px 20px;
+            background: var(--surface);
+        }
+
+        .fn-block .fn-body p { margin-bottom: 8px; font-size: 0.9rem; }
+
+        /* ── SCROLL TOP ── */
+        .scroll-top {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            background: var(--accent);
+            color: #000;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            transition: transform 0.2s;
+        }
+
+        .scroll-top:hover { transform: scale(1.1); }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 900px) {
+            nav { display: none; }
+            main { padding: 32px 24px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="layout">
+
+<!-- ══════════════════════════════════════════
+     SIDEBAR
+══════════════════════════════════════════ -->
+<nav>
+    <div class="logo">
+        <h2>🃏 Sequence</h2>
+        <p>Documentación técnica v1.0</p>
+    </div>
+    <ul>
+        <li class="section-title">Introducción</li>
+        <li><a href="#intro">Descripción general</a></li>
+        <li><a href="#arquitectura">Arquitectura</a></li>
+        <li><a href="#firebase">Estructura Firebase</a></li>
+        <li><a href="#carga">Orden de carga</a></li>
+
+        <li class="section-title">Archivos JS</li>
+        <li><a href="#config">config.js</a></li>
+        <li><a href="#config-firebase" class="sub">Firebase</a></li>
+        <li><a href="#config-reglas" class="sub">Reglas</a></li>
+        <li><a href="#config-toast" class="sub">Toast</a></li>
+
+        <li><a href="#tablero">tablero.js</a></li>
+        <li><a href="#tablero-mapa" class="sub">Mapa de cartas</a></li>
+        <li><a href="#tablero-gen" class="sub">Generación visual</a></li>
+
+        <li><a href="#lobby">lobby.js</a></li>
+        <li><a href="#lobby-vars" class="sub">Variables globales</a></li>
+        <li><a href="#lobby-entrada" class="sub">Entrada al lobby</a></li>
+        <li><a href="#lobby-color" class="sub">Selección de color</a></li>
+        <li><a href="#lobby-listeners" class="sub">Listeners Firebase</a></li>
+        <li><a href="#lobby-verificar" class="sub">Verificación de inicio</a></li>
+        <li><a href="#lobby-estado" class="sub">Estado del juego</a></li>
+
+        <li><a href="#game">game.js</a></li>
+        <li><a href="#game-vars" class="sub">Variables globales</a></li>
+        <li><a href="#game-formato" class="sub">Formato visual</a></li>
+        <li><a href="#game-historial" class="sub">Historial y mazo</a></li>
+        <li><a href="#game-muerte" class="sub">Muerte súbita</a></li>
+        <li><a href="#game-turnos" class="sub">Turnos</a></li>
+        <li><a href="#game-fichas" class="sub">Fichas</a></li>
+        <li><a href="#game-sequences" class="sub">Sequences</a></li>
+        <li><a href="#game-descarte" class="sub">Descarte</a></li>
+        <li><a href="#game-reinicio" class="sub">Reinicio</a></li>
+
+        <li><a href="#jugador">jugador.js</a></li>
+        <li><a href="#jugador-mano" class="sub">Mano del jugador</a></li>
+        <li><a href="#jugador-modales" class="sub">Modales</a></li>
+
+        <li class="section-title">CSS</li>
+        <li><a href="#css">Archivos de estilos</a></li>
+    </ul>
+</nav>
+
+<!-- ══════════════════════════════════════════
+     MAIN CONTENT
+══════════════════════════════════════════ -->
+<main>
+
+    <!-- HERO -->
+    <div class="hero">
+        <h1>🃏 Sequence Multijugador</h1>
+        <p class="subtitle">Documentación técnica completa del proyecto</p>
+        <div class="tags">
+            <span class="badge badge-yellow">JavaScript Vanilla</span>
+            <span class="badge badge-blue">Firebase Realtime DB</span>
+            <span class="badge badge-green">HTML5</span>
+            <span class="badge badge-red">Tiempo Real</span>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         INTRODUCCIÓN
+    ══════════════════════════════════════ -->
+    <h2 id="intro">Descripción general</h2>
+
+    <p>
+        Sequence Multijugador es una implementación web del juego de mesa <strong>Sequence</strong>.
+        Permite que múltiples jugadores se conecten desde distintos dispositivos y jueguen en tiempo real
+        usando <strong>Firebase Realtime Database</strong> como backend de sincronización.
+    </p>
+
+    <p>
+        El proyecto no usa ningún framework de JavaScript. Toda la lógica está escrita en
+        <strong>JavaScript Vanilla</strong> con variables globales compartidas entre archivos,
+        cargados en orden específico mediante etiquetas <code>&lt;script&gt;</code> en el HTML.
+    </p>
+
+    <div class="card info">
+        <strong>Sin servidor propio:</strong> No hay backend personalizado. Firebase actúa como base de datos
+        en tiempo real y todos los clientes (navegadores) reaccionan a los cambios mediante listeners
+        (<code>.on('value')</code>, <code>.on('child_added')</code>). La lógica del juego se ejecuta
+        en el navegador del jugador que sea el <em>anfitrión</em> (el primero en la lista de jugadores).
+    </div>
+
+    <h2 id="arquitectura">Arquitectura general</h2>
+
+    <p>El proyecto tiene 5 archivos JavaScript con responsabilidades bien definidas:</p>
+
+    <div class="diagram">
+<span class="file">index.html</span>
+  └── carga en orden:
+        <span class="node">config.js</span>    <span class="arrow">→</span> <span class="label">Firebase + reglas + notificaciones</span>
+        <span class="node">lobby.js</span>     <span class="arrow">→</span> <span class="label">Sala de espera + listeners de estado</span>
+        <span class="node">tablero.js</span>   <span class="arrow">→</span> <span class="label">Mapa de cartas + generación del tablero HTML</span>
+        <span class="node">game.js</span>      <span class="arrow">→</span> <span class="label">Lógica del juego (turnos, fichas, sequences)</span>
+        <span class="node">jugador.js</span>   <span class="arrow">→</span> <span class="label">Mano del jugador + modales</span>
+
+Dependencias entre archivos:
+  <span class="node">game.js</span>    <span class="arrow">usa →</span> <span class="label">baseDatos (config), miJugador/miJugadorId/jugadoresEnSala (lobby),</span>
+               <span class="label">manoPropia/cartaSeleccionadaIdx/renderizarMano (jugador),</span>
+               <span class="label">mapaCartas/generarTablero (tablero)</span>
+  <span class="node">lobby.js</span>   <span class="arrow">usa →</span> <span class="label">baseDatos/configuracionJuego/inicializarReglas/mostrarToast (config),</span>
+               <span class="label">obtenerMazoBarajado (game)</span>
+  <span class="node">jugador.js</span> <span class="arrow">usa →</span> <span class="label">miJugadorRef (lobby), configuracionJuego (config)</span>
+    </div>
+
+    <h2 id="firebase">Estructura de Firebase Realtime Database</h2>
+
+    <p>Toda la información de la partida vive bajo el nodo <code>sala_activa/</code>:</p>
+
+    <div class="diagram">
+sala_activa/
+  ├── jugadores/
+  │     └── {id_jugador}/
+  │           ├── nombre:  "Carlos"
+  │           ├── color:   "azul"
+  │           ├── listo:   true
+  │           └── mano:    ["AS", "KH", "J1D", ...]
+  │
+  ├── estado/
+  │     ├── iniciado:        true
+  │     ├── turnoActual:     "{id_jugador}"
+  │     ├── ordenTurnos:     ["{id1}", "{id2}", ...]
+  │     ├── jugadoresTotales: 2
+  │     ├── equiposTotales:   2
+  │     ├── turnosPasados:    0
+  │     ├── marcaTiempo:      1234567890
+  │     ├── empate:           false
+  │     ├── victoria:         "azul"   (solo al ganar)
+  │     ├── abandonado:       true     (solo al abandonar)
+  │     ├── nombreAbandono:   "Carlos"
+  │     ├── ultimoJack:       { tipo, codigoCarta, jugadorId, ts }
+  │     └── historial/
+  │           └── {id}: "🃏 Carlos colocó ficha en..."
+  │
+  ├── tablero/
+  │     └── {indice}: "azul"   (0-99, solo casillas ocupadas)
+  │
+  ├── mazo/
+  │     └── [array de cartas restantes]
+  │
+  └── nombresEquipos/
+        ├── rojo:  "Rojo"
+        ├── azul:  "Azul"
+        └── verde: "Verde"
+    </div>
+
+    <h2 id="carga">Orden de carga y variables globales</h2>
+
+    <div class="card warning">
+        <strong>⚠️ El orden de los <code>&lt;script&gt;</code> en el HTML es crítico.</strong>
+        Cada archivo asume que las variables de los archivos anteriores ya existen en el scope global.
+        Cambiar el orden causará errores de "variable no definida".
+    </div>
+
+    <table>
+        <tr>
+            <th>#</th>
+            <th>Archivo</th>
+            <th>Expone al scope global</th>
+            <th>Requiere del scope global</th>
+        </tr>
+        <tr>
+            <td>1</td>
+            <td><code>config.js</code></td>
+            <td><code>baseDatos</code>, <code>configuracionJuego</code>, <code>inicializarReglas()</code>, <code>mostrarToast()</code></td>
+            <td>Firebase SDK (cargado antes en el HTML)</td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td><code>lobby.js</code></td>
+            <td><code>miJugador</code>, <code>miJugadorId</code>, <code>miJugadorRef</code>, <code>jugadoresEnSala</code>, <code>juegoIniciadoVisualmente</code>, <code>salaRef</code>, <code>estadoJuegoRef</code></td>
+            <td><code>baseDatos</code>, <code>configuracionJuego</code>, <code>inicializarReglas()</code>, <code>mostrarToast()</code>, <code>obtenerMazoBarajado()</code></td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td><code>tablero.js</code></td>
+            <td><code>mapaCartas</code>, <code>generarTablero()</code></td>
+            <td>Ninguna</td>
+        </tr>
+        <tr>
+            <td>4</td>
+            <td><code>game.js</code></td>
+            <td><code>obtenerMazoBarajado()</code>, <code>evaluarOpcionesDeTurno()</code>, <code>reiniciarEstadoJuegoLocal()</code></td>
+            <td><code>baseDatos</code>, <code>miJugador</code>, <code>miJugadorId</code>, <code>miJugadorRef</code>, <code>jugadoresEnSala</code>, <code>juegoIniciadoVisualmente</code>, <code>manoPropia</code>, <code>cartaSeleccionadaIdx</code>, <code>renderizarMano()</code>, <code>mapaCartas</code>, <code>generarTablero()</code>, <code>configuracionJuego</code>, <code>mostrarToast()</code></td>
+        </tr>
+        <tr>
+            <td>5</td>
+            <td><code>jugador.js</code></td>
+            <td><code>manoPropia</code>, <code>cartaSeleccionadaIdx</code>, <code>renderizarMano()</code>, <code>inicializarManoFirebase()</code></td>
+            <td><code>miJugadorRef</code>, <code>configuracionJuego</code></td>
+        </tr>
+    </table>
+
+    <!-- ══════════════════════════════════════
+         CONFIG.JS
+    ══════════════════════════════════════ -->
+    <div class="file-header" id="config">
+        <span class="icon">⚙️</span>
+        <div class="info">
+            <h3>config.js</h3>
+            <p>Inicialización de Firebase · Reglas del juego · Sistema de notificaciones</p>
+        </div>
+    </div>
+
+    <h3 id="config-firebase">Inicialización de Firebase</h3>
+
+    <p>
+        El archivo comienza definiendo el objeto <code>firebaseConfig</code> con las credenciales del proyecto
+        en Firebase Console. Estas credenciales son públicas por diseño (Firebase usa reglas de seguridad
+        en el servidor para controlar el acceso, no la ocultación de las credenciales).
+    </p>
+
+    <pre><span class="kw">const</span> <span class="var">firebaseConfig</span> <span class="op">=</span> {
+  apiKey:            <span class="str">"AIzaSy..."</span>,
+  authDomain:        <span class="str">"secuence-7d7af.firebaseapp.com"</span>,
+  databaseURL:       <span class="str">"https://secuence-7d7af-default-rtdb.firebaseio.com/"</span>,
+  projectId:         <span class="str">"secuence-7d7af"</span>,
+  storageBucket:     <span class="str">"secuence-7d7af.firebasestorage.app"</span>,
+  messagingSenderId: <span class="str">"576327423344"</span>,
+  appId:             <span class="str">"1:576327423344:web:..."</span>
+};
+
+<span class="var">firebase</span>.<span class="fn">initializeApp</span>(<span class="var">firebaseConfig</span>);
+<span class="kw">const</span> <span class="var">baseDatos</span> <span class="op">=</span> <span class="var">firebase</span>.<span class="fn">database</span>();</pre>
+
+    <p>
+        <code>baseDatos</code> es la referencia raíz a Firebase Realtime Database. Todos los demás archivos
+        usan esta variable para leer y escribir datos. Es la variable más importante del proyecto.
+    </p>
+
+    <h3 id="config-reglas">Reglas del juego</h3>
+
+    <p>
+        <code>configuracionJuego</code> es un objeto global que almacena los parámetros de la partida actual.
+        Se inicializa vacío y se llena cuando la partida comienza mediante <code>inicializarReglas()</code>.
+    </p>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>inicializarReglas(jugadoresTotales, equiposTotales)</code>
+        </div>
+        <div class="fn-body">
+            <p>Calcula y guarda en <code>configuracionJuego</code> las reglas que aplican según el número de jugadores y equipos:</p>
+            <table>
+                <tr><th>Jugadores</th><th>Cartas por jugador</th></tr>
+                <tr><td>2</td><td>7</td></tr>
+                <tr><td>3 – 4</td><td>6</td></tr>
+                <tr><td>6</td><td>5</td></tr>
+                <tr><td>8 – 9</td><td>4</td></tr>
+                <tr><td>10 – 12</td><td>3</td></tr>
+            </table>
+            <p>
+                <strong>Sequences para ganar:</strong> Si hay 3 equipos → 1 sequence. En cualquier otro caso → 2 sequences.
+            </p>
+        </div>
+    </div>
+
+    <h3 id="config-toast">Sistema de notificaciones Toast</h3>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función global</span>
+            <code>window.mostrarToast(mensaje, tipo, duracion)</code>
+        </div>
+        <div class="fn-body">
+            <p>Crea una notificación flotante temporal en la esquina de la pantalla.</p>
+            <table>
+                <tr><th>Parámetro</th><th>Tipo</th><th>Descripción</th></tr>
+                <tr><td><code>mensaje</code></td><td>string</td><td>Texto a mostrar</td></tr>
+                <tr><td><code>tipo</code></td><td>string</td><td><code>"info"</code>, <code>"warning"</code>, <code>"error"</code>, <code>"success"</code></td></tr>
+                <tr><td><code>duracion</code></td><td>number</td><td>Milisegundos antes de desaparecer (default: 3000)</td></tr>
+            </table>
+            <p>
+                Usa <code>toast.offsetHeight</code> para forzar un <em>reflow</em> del DOM antes de agregar
+                la clase <code>toast-visible</code>. Esto es necesario para que la animación CSS de entrada
+                funcione correctamente (sin el reflow, el navegador omite la transición).
+            </p>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         TABLERO.JS
+    ══════════════════════════════════════ -->
+    <div class="file-header" id="tablero">
+        <span class="icon">🎲</span>
+        <div class="info">
+            <h3>tablero.js</h3>
+            <p>Mapa de cartas del tablero · Generación del HTML del tablero</p>
+        </div>
+    </div>
+
+    <h3 id="tablero-mapa">Mapa de cartas</h3>
+
+    <p>
+        <code>mapaCartas</code> es un array de 100 strings que representa el tablero de 10×10 del juego Sequence.
+        Cada posición contiene el código de la carta que ocupa esa casilla (ej: <code>"AS"</code> = As de Espadas,
+        <code>"10H"</code> = 10 de Corazones). Las 4 esquinas son <code>"LIBRE"</code> — casillas especiales
+        que cuentan como ficha para todos los equipos.
+    </p>
+
+    <div class="card info">
+        <strong>Codificación de cartas:</strong> El código tiene la forma <code>{valor}{palo}</code>.
+        Palos: <code>S</code> = Spades (♠), <code>H</code> = Hearts (❤️), <code>D</code> = Diamonds (♦️), <code>C</code> = Clubs (♣).
+        Valores: <code>A</code>, <code>2</code>–<code>10</code>, <code>Q</code>, <code>K</code>.
+        Los Jacks tienen formato especial: <code>J1D</code> (2 ojos), <code>J2H</code> (1 ojo).
+    </div>
+
+    <h3 id="tablero-gen">Generación visual del tablero</h3>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>cartaACodigoAPI(carta)</code>
+        </div>
+        <div class="fn-body">
+            <p>
+                Convierte el código interno de carta al formato que usa la API de imágenes
+                <code>deckofcardsapi.com</code>. La API usa <code>"0"</code> en lugar de <code>"10"</code>
+                para los dieces. Ejemplo: <code>"10S"</code> → <code>"0S"</code>.
+            </p>
+        </div>
+    </div>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>generarTablero()</code>
+        </div>
+        <div class="fn-body">
+            <p>
+                Limpia el elemento <code>#tablero</code> y recrea las 100 casillas del tablero iterando
+                sobre <code>mapaCartas</code>. Para cada casilla:
+            </p>
+            <ul style="margin: 8px 0 8px 20px; font-size: 0.9rem; line-height: 1.8;">
+                <li>Crea un <code>&lt;div class="casilla"&gt;</code></li>
+                <li>Asigna <code>data-carta</code> e <code>data-indice</code> como atributos de datos</li>
+                <li>Asigna el <code>onclick</code> que llama a <code>intentarPonerFicha(indice, carta)</code></li>
+                <li>Si es <code>"LIBRE"</code>: agrega clase <code>esquina</code> y muestra ⭐</li>
+                <li>Si es carta normal: crea un <code>&lt;img&gt;</code> con la URL de la API de cartas</li>
+            </ul>
+            <p>
+                Las imágenes usan <code>loading="lazy"</code> para no bloquear la carga inicial y
+                <code>draggable="false"</code> para evitar el comportamiento nativo de arrastre del navegador.
+            </p>
+            <p>
+                Esta función se llama automáticamente al cargar el archivo y también desde
+                <code>reiniciarEstadoJuegoLocal()</code> al volver al lobby.
+            </p>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         LOBBY.JS
+    ══════════════════════════════════════ -->
+    <div class="file-header" id="lobby">
+        <span class="icon">🏠</span>
+        <div class="info">
+            <h3>lobby.js</h3>
+            <p>Sala de espera · Gestión de jugadores · Listeners de estado · Inicio de partida</p>
+        </div>
+    </div>
+
+    <h3 id="lobby-vars">Variables globales del lobby</h3>
+
+    <table>
+        <tr><th>Variable</th><th>Tipo</th><th>Descripción</th></tr>
+        <tr>
+            <td><code>miJugadorId</code></td>
+            <td>string | null</td>
+            <td>ID único generado por Firebase al hacer <code>push()</code>. Es la clave del nodo del jugador en <code>sala_activa/jugadores/</code>.</td>
+        </tr>
+        <tr>
+            <td><code>miJugadorRef</code></td>
+            <td>Firebase Ref | null</td>
+            <td>Referencia directa al nodo del jugador en Firebase. Permite hacer <code>.set()</code>, <code>.update()</code> y <code>.remove()</code> sin reconstruir la ruta.</td>
+        </tr>
+        <tr>
+            <td><code>miJugador</code></td>
+            <td>objeto</td>
+            <td>Estado local del jugador: <code>{ nombre, color, listo }</code>. Se sincroniza con Firebase al cambiar.</td>
+        </tr>
+        <tr>
+            <td><code>jugadoresEnSala</code></td>
+            <td>array</td>
+            <td>Lista de todos los jugadores conectados, actualizada por el listener de <code>salaRef</code>. Cada elemento tiene <code>{ nombre, color, listo, id }</code>.</td>
+        </tr>
+        <tr>
+            <td><code>juegoIniciadoVisualmente</code></td>
+            <td>boolean</td>
+            <td>Indica si la pantalla de juego ya está visible. Evita que el listener de estado ejecute la transición de pantalla más de una vez.</td>
+        </tr>
+        <tr>
+            <td><code>partidaIniciada</code></td>
+            <td>boolean</td>
+            <td>Evita que <code>verificarReglasParaIniciar()</code> ejecute la lógica de inicio múltiples veces.</td>
+        </tr>
+        <tr>
+            <td><code>yaLimpioSala</code></td>
+            <td>boolean</td>
+            <td>Bandera que garantiza que la limpieza de sala (borrar tablero, mazo, estado) solo ocurra una vez: cuando el primer jugador entra y está solo.</td>
+        </tr>
+    </table>
+
+    <h3 id="lobby-entrada">Entrada al lobby</h3>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>entrarLobby()</code>
+        </div>
+        <div class="fn-body">
+            <p>Se ejecuta al presionar el botón "Siguiente" en la pantalla de login. Flujo completo:</p>
+            <ol style="margin: 8px 0 8px 20px; font-size: 0.9rem; line-height: 2;">
+                <li>Valida que el nombre no esté vacío</li>
+                <li>Busca en <code>localStorage</code> si hay un ID de sesión anterior (<code>sequence_jugador_id</code>). Si existe, elimina ese nodo de Firebase primero (anti-duplicado para recargas de página)</li>
+                <li>Llama a <code>salaRef.push(miJugador)</code> — crea el nodo del jugador en Firebase en una sola operación atómica, evitando la race condition de push vacío + set separado</li>
+                <li>Guarda el nuevo ID en <code>localStorage</code></li>
+                <li>Registra <code>onDisconnect().remove()</code> para que Firebase elimine el nodo si el jugador se desconecta inesperadamente</li>
+                <li>Registra <code>onDisconnect().update({ abandonado: true })</code> en el estado del juego para notificar a los demás</li>
+                <li>Cambia la pantalla de login a la pantalla de lobby</li>
+            </ol>
+        </div>
+    </div>
+
+    <h3 id="lobby-color">Selección de color / equipo</h3>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>seleccionarColor(color)</code>
+        </div>
+        <div class="fn-body">
+            <p>Se ejecuta al presionar uno de los botones de equipo (Rojo, Azul, Verde).</p>
+            <ul style="margin: 8px 0 8px 20px; font-size: 0.9rem; line-height: 1.8;">
+                <li>Actualiza <code>miJugador.color</code> y habilita el botón "Estoy Listo"</li>
+                <li>Reemplaza el título estático "Elige tu equipo" por un <code>&lt;span contenteditable&gt;</code> que permite editar el nombre del equipo en tiempo real</li>
+                <li>El <code>contenteditable</code> dispara <code>cambiarNombreEquipo()</code> en cada tecla, que escribe en <code>sala_activa/nombresEquipos/{color}</code></li>
+                <li>Marca visualmente el botón del color seleccionado con la clase <code>color-activo</code></li>
+                <li>Llama a <code>miJugadorRef.set(miJugador)</code> para sincronizar el color con Firebase</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>alternarListo()</code>
+        </div>
+        <div class="fn-body">
+            <p>
+                Alterna el estado <code>listo</code> del jugador entre <code>true</code> y <code>false</code>.
+                Actualiza el texto y color del botón visualmente y sincroniza con Firebase mediante
+                <code>miJugadorRef.set(miJugador)</code>.
+            </p>
+        </div>
+    </div>
+
+    <h3 id="lobby-listeners">Listeners de Firebase en el lobby</h3>
+
+    <h4>salaRef.on('value') — Jugadores en sala</h4>
+    <p>
+        Es el listener más importante del lobby. Se dispara cada vez que cualquier dato bajo
+        <code>sala_activa/jugadores/</code> cambia. Flujo:
+    </p>
+    <ol style="margin: 8px 0 16px 20px; font-size: 0.9rem; line-height: 2;">
+        <li>Reconstruye <code>jugadoresEnSala</code> filtrando solo nodos con <code>nombre</code> válido</li>
+        <li><strong>Guard de re-inserción:</strong> Si el jugador local (<code>miJugadorId</code>) no aparece en el snapshot (por desconexión temporal de Firebase), lo añade localmente a la lista y lo re-inserta en Firebase con <code>salaRef.child(miJugadorId).set(miJugador)</code></li>
+        <li><strong>Limpieza de sala:</strong> Si el jugador es el único y aún no limpió (<code>!yaLimpioSala</code>), borra el estado anterior de la partida (tablero, mazo, estado, nombres de equipos)</li>
+        <li>Llama a <code>actualizarVistaLobby()</code> y <code>verificarReglasParaIniciar()</code></li>
+    </ol>
+
+    <div class="card warning">
+        <strong>¿Por qué el guard de re-inserción?</strong> Firebase puede ejecutar <code>onDisconnect().remove()</code>
+        si detecta una desconexión temporal de red (por ejemplo, cuando un segundo jugador entra y hay latencia).
+        Sin este guard, el primer jugador desaparecería de la lista hasta que seleccionara color (que llama
+        <code>miJugadorRef.set()</code> y lo restaura). El guard garantiza que el jugador siempre aparezca
+        en su propia lista.
+    </div>
+
+    <h4>nombresEquiposRef.on('value') — Nombres de equipos</h4>
+    <p>
+        Escucha cambios en <code>sala_activa/nombresEquipos/</code>. Cuando otro jugador edita el nombre
+        de un equipo, este listener actualiza el <code>&lt;span contenteditable&gt;</code> del jugador local,
+        pero solo si el span no está siendo editado activamente (<code>document.activeElement !== spanEditable</code>).
+    </p>
+
+    <h3 id="lobby-verificar">Verificación de reglas para iniciar</h3>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>verificarReglasParaIniciar()</code>
+        </div>
+        <div class="fn-body">
+            <p>Se llama cada vez que el listener de jugadores se dispara. Verifica si se cumplen todas las condiciones para iniciar la partida:</p>
+            <ol style="margin: 8px 0 8px 20px; font-size: 0.9rem; line-height: 2;">
+                <li>Todos los jugadores deben tener <code>listo: true</code></li>
+                <li>Debe haber exactamente 2 o 3 equipos con jugadores</li>
+                <li>Los equipos deben tener la misma cantidad de jugadores</li>
+            </ol>
+            <p>
+                Si todo es válido, <strong>solo el anfitrión</strong> (el jugador en posición 0 de la lista)
+                ejecuta la inicialización para evitar que múltiples clientes escriban en Firebase simultáneamente:
+            </p>
+            <ul style="margin: 8px 0 8px 20px; font-size: 0.9rem; line-height: 1.8;">
+                <li>Construye el orden de turnos intercalando jugadores por equipo (verde → azul → rojo)</li>
+                <li>Elige un jugador aleatorio para el primer turno</li>
+                <li>Llama a <code>obtenerMazoBarajado()</code> y reparte cartas a cada jugador</li>
+                <li>Escribe el mazo restante en <code>sala_activa/mazo/</code></li>
+                <li>Escribe el estado inicial en <code>sala_activa/estado/</code> con <code>iniciado: true</code></li>
+            </ul>
+        </div>
+    </div>
+
+    <h3 id="lobby-estado">Listener de estado del juego</h3>
+
+    <p>
+        <code>estadoJuegoRef.on('value')</code> escucha <code>sala_activa/estado/</code> y maneja
+        todos los estados posibles de la partida:
+    </p>
+
+    <table>
+        <tr><th>Condición</th><th>Acción</th></tr>
+        <tr><td><code>estado.abandonado === true</code></td><td>Muestra pantalla de fin con mensaje de abandono</td></tr>
+        <tr><td><code>estado.empate === true</code></td><td>Muestra pantalla de empate técnico</td></tr>
+        <tr><td><code>!estado || !estado.iniciado</code></td><td>Si el juego estaba visible, vuelve al lobby y resetea el estado local</td></tr>
+        <tr><td><code>estado.victoria</code></td><td>Muestra pantalla de victoria con el nombre del equipo ganador</td></tr>
+        <tr><td><code>estado.iniciado === true</code></td><td>Transiciona a la pantalla de juego (con 1 segundo de delay)</td></tr>
+    </table>
+
+    <!-- ══════════════════════════════════════
+         GAME.JS
+    ══════════════════════════════════════ -->
+    <div class="file-header" id="game">
+        <span class="icon">🎮</span>
+        <div class="info">
+            <h3>game.js</h3>
+            <p>Lógica central del juego · Turnos · Fichas · Sequences · Mazo · Efectos visuales</p>
+        </div>
+    </div>
+
+    <h3 id="game-vars">Variables globales del juego</h3>
+
+    <table>
+        <tr><th>Variable</th><th>Tipo</th><th>Descripción</th></tr>
+        <tr><td><code>TAMANO_TABLERO</code></td><td>const number</td><td>Siempre 10. Define las dimensiones del tablero 10×10.</td></tr>
+        <tr><td><code>secuenciasLogradas</code></td><td>objeto</td><td><code>{ rojo: 0, azul: 0, verde: 0 }</code>. Contador local de sequences completados por equipo.</td></tr>
+        <tr><td><code>combosYaMarcados</code></td><td>Set</td><td>Almacena las claves de combos de 5 casillas ya marcados como sequence, para no contarlos dos veces.</td></tr>
+        <tr><td><code>tableroRef</code></td><td>Firebase Ref</td><td>Referencia a <code>sala_activa/tablero/</code>.</td></tr>
+        <tr><td><code>turnoActualId</code></td><td>string | null</td><td>ID del jugador cuyo turno es actualmente.</td></tr>
+        <tr><td><code>miTurno</code></td><td>boolean</td><td><code>true</code> cuando <code>turnoActualId === miJugadorId</code>.</td></tr>
+        <tr><td><code>listaOrdenTurnos</code></td><td>array</td><td>Array de IDs de jugadores en el orden en que se turnan.</td></tr>
+        <tr><td><code>ultimaFichaColocadaEl</code></td><td>DOM Element | null</td><td>Referencia al elemento <code>.ficha</code> de la última ficha colocada, para quitarle el brillo después de 5 segundos.</td></tr>
+        <tr><td><code>ultimaCasillaRemovidaEl</code></td><td>DOM Element | null</td><td>Referencia a la casilla de la última ficha removida, para quitarle el efecto de remoción.</td></tr>
+        <tr><td><code>timerOverlayJack</code></td><td>number | null</td><td>ID del <code>setTimeout</code> que oculta el overlay de Jack.</td></tr>
+        <tr><td><code>timerUltimaColocada</code></td><td>number | null</td><td>ID del <code>setTimeout</code> que quita el brillo de la última ficha colocada.</td></tr>
+        <tr><td><code>timerUltimaRemovida</code></td><td>number | null</td><td>ID del <code>setTimeout</code> que quita el efecto de la última casilla removida.</td></tr>
+    </table>
+
+    <h3 id="game-formato">Ayudantes de formato visual</h3>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>traducirCartaAIcono(codigoCarta)</code>
+        </div>
+        <div class="fn-body">
+            <p>
+                Convierte un código de carta (ej: <code>"10H"</code>) en un fragmento HTML con el número
+                y el emoji del palo, con color según el palo (rojo para corazones/diamantes, gris para
+                espadas/tréboles). Se usa en los mensajes del historial.
+            </p>
+        </div>
+    </div>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>colorearNombre(nombre, color)</code>
+        </div>
+        <div class="fn-body">
+            <p>
+                Envuelve un nombre en un <code>&lt;b&gt;</code> con el color del equipo y un efecto de
+                brillo (<code>text-shadow</code>). Se usa en todos los mensajes del historial para
+                identificar visualmente a qué equipo pertenece cada acción.
+            </p>
+        </div>
+    </div>
+
+    <h3 id="game-historial">Historial y contador de mazo</h3>
+
+    <p>
+        <code>baseDatos.ref('sala_activa/estado/historial').on('child_added')</code> escucha cada nuevo
+        mensaje que se agrega al historial. Cuando llega uno, crea un <code>&lt;li&gt;</code> y lo
+        agrega al final de la lista <code>#lista-historial</code>, haciendo scroll automático al fondo.
+    </p>
+
+    <p>
+        <code>baseDatos.ref('sala_activa/mazo').on('value')</code> actualiza el contador visual
+        <code>#contador-mazo</code> cada vez que el mazo cambia (cuando alguien roba una carta).
+    </p>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>registrarAccion(mensaje)</code>
+        </div>
+        <div class="fn-body">
+            <p>
+                Hace <code>push(mensaje)</code> en <code>sala_activa/estado/historial/</code>.
+                Firebase genera un ID único para cada entrada. El listener <code>child_added</code>
+                en todos los clientes recibe el mensaje y lo muestra en pantalla.
+            </p>
+        </div>
+    </div>
+
+    <h3 id="game-muerte">Muerte súbita / Empate técnico</h3>
+
+    <p>
+        El listener de <code>turnosPasados</code> detecta cuando todos los jugadores han pasado su turno
+        consecutivamente (sin hacer ninguna jugada). Cuando <code>pases >= jugadoresEnSala.length</code>,
+        el anfitrión evalúa quién tiene más sequences:
+    </p>
+
+    <ul style="margin: 8px 0 16px 20px; font-size: 0.9rem; line-height: 1.8;">
+        <li>Si un equipo tiene más sequences que los demás → escribe <code>victoria: "{equipo}"</code></li>
+        <li>Si hay empate en sequences → escribe <code>empate: true</code></li>
+        <li>Si nadie tiene sequences → escribe <code>empate: true</code></li>
+    </ul>
+
+    <div class="card info">
+        <strong>¿Por qué solo el anfitrión?</strong> Para evitar que múltiples clientes escriban en Firebase
+        simultáneamente con posibles resultados distintos. El anfitrión es siempre el jugador en posición 0
+        de <code>jugadoresEnSala</code>, que es el que entró primero a la sala.
+    </div>
+
+    <h3 id="game-turnos">Sistema de turnos</h3>
+
+    <p>
+        El listener de <code>turnoActual</code> se dispara en todos los clientes cada vez que el turno cambia.
+        Compara <code>turnoActualId</code> con <code>miJugadorId</code> para saber si es el turno del jugador local:
+    </p>
+
+    <ul style="margin: 8px 0 16px 20px; font-size: 0.9rem; line-height: 1.8;">
+        <li><strong>Es mi turno:</strong> Agrega clase <code>mi-turno</code> al panel de mano, actualiza el título con el color del equipo, llama a <code>evaluarOpcionesDeTurno()</code></li>
+        <li><strong>No es mi turno:</strong> Agrega clase <code>esperando-turno</code>, muestra el nombre del jugador que tiene el turno, oculta el botón "Pasar"</li>
+    </ul>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función global</span>
+            <code>window.evaluarOpcionesDeTurno()</code>
+        </div>
+        <div class="fn-body">
+            <p>Analiza la mano del jugador y el estado del tablero para determinar qué opciones tiene:</p>
+            <table>
+                <tr><th>Situación</th><th>Resultado</th></tr>
+                <tr><td>Tiene al menos una jugada válida</td><td>Oculta el botón "Pasar"</td></tr>
+                <tr><td>No tiene jugadas pero tiene cartas muertas</td><td>Oculta "Pasar", muestra toast para descartar</td></tr>
+                <tr><td>No tiene jugadas ni cartas muertas</td><td>Muestra el botón "Pasar turno"</td></tr>
+            </table>
+            <p>Para cada carta en la mano evalúa:</p>
+            <ul style="margin: 8px 0 8px 20px; font-size: 0.9rem; line-height: 1.8;">
+                <li><strong>J1 (2 ojos):</strong> ¿Hay alguna casilla libre en el tablero?</li>
+                <li><strong>J2 (1 ojo):</strong> ¿Hay alguna ficha rival no protegida?</li>
+                <li><strong>Carta normal:</strong> ¿Hay alguna casilla con esa carta sin ficha? Si todas están ocupadas, es carta muerta.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>pasarTurno()</code>
+        </div>
+        <div class="fn-body">
+            <p>
+                Calcula el índice del siguiente jugador en <code>listaOrdenTurnos</code> usando módulo
+                (<code>% listaOrdenTurnos.length</code>) para que sea circular. Escribe el ID del siguiente
+                jugador en <code>sala_activa/estado/turnoActual/</code>.
+            </p>
+        </div>
+    </div>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función global</span>
+            <code>window.ejecutarPasoDeTurno()</code>
+        </div>
+        <div class="fn-body">
+            <p>
+                Se ejecuta cuando el jugador presiona "Pasar ⏭️". Registra la acción en el historial,
+                incrementa <code>turnosPasados</code> usando una <strong>transacción Firebase</strong>
+                (para evitar condiciones de carrera si dos jugadores pasan al mismo tiempo), y luego
+                llama a <code>pasarTurno()</code>.
+            </p>
+        </div>
+    </div>
+
+    <h3 id="game-fichas">Colocar y quitar fichas</h3>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>intentarPonerFicha(indiceTablero, cartaTablero)</code>
+        </div>
+        <div class="fn-body">
+            <p>Punto de entrada para todas las jugadas. Se ejecuta al hacer clic en una casilla del tablero. Validaciones en orden:</p>
+            <ol style="margin: 8px 0 8px 20px; font-size: 0.9rem; line-height: 2;">
+                <li>¿Es mi turno? Si no → toast de advertencia</li>
+                <li>¿Hay carta seleccionada? Si no → toast de advertencia</li>
+                <li>¿Es casilla LIBRE (esquina)? → toast informativo</li>
+                <li>Si la carta es <strong>J2 (1 ojo)</strong>: verifica que haya ficha rival no protegida, muestra overlay, elimina la ficha de Firebase</li>
+                <li>Si la casilla ya tiene ficha → toast de error</li>
+                <li>Si la carta no coincide con la casilla (y no es J1) → toast de error</li>
+                <li>Si todo es válido: coloca la ficha en Firebase, muestra overlay si es J1, registra en historial</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>colocarFichaVisual(indice, color)</code>
+        </div>
+        <div class="fn-body">
+            <p>
+                Se llama desde el listener <code>tableroRef.on('child_added')</code>. Crea el elemento
+                <code>&lt;div class="ficha ficha-{color}"&gt;</code> y lo agrega a la casilla.
+                Usa doble <code>requestAnimationFrame</code> para garantizar que la animación de entrada
+                (<code>entrando</code> → sin clase) funcione correctamente en todos los navegadores.
+                Después de 350ms (cuando la animación de entrada termina), agrega la clase
+                <code>ultima-colocada</code> que produce el brillo, y programa su remoción a los 5 segundos.
+            </p>
+        </div>
+    </div>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>quitarFichaVisual(indice)</code>
+        </div>
+        <div class="fn-body">
+            <p>
+                Se llama desde el listener <code>tableroRef.on('child_removed')</code>. Anima la ficha
+                con <code>transform: scale(0)</code> y <code>opacity: 0</code>, y al terminar la transición
+                (<code>transitionend</code>) la elimina del DOM y agrega la clase <code>ultima-removida</code>
+                a la casilla (efecto de destello rojo). El efecto dura 5 segundos.
+            </p>
+        </div>
+    </div>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>limpiarEfectosAnteriores()</code>
+        </div>
+        <div class="fn-body">
+            <p>
+                Cancela los timers activos y quita las clases de efecto visual (<code>ultima-colocada</code>,
+                <code>ultima-removida</code>) de los elementos anteriores. Se llama antes de cada nueva jugada
+                para que solo la última acción tenga el efecto visual activo.
+            </p>
+        </div>
+    </div>
+
+    <h3 id="game-sequences">Detección de Sequences</h3>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>verificarSequence(colorJugador)</code>
+        </div>
+        <div class="fn-body">
+            <p>
+                Se llama cada vez que se coloca una ficha. Genera todos los posibles combos de 5 casillas
+                consecutivas en las 4 direcciones y verifica si alguno está completamente ocupado por el equipo:
+            </p>
+            <ul style="margin: 8px 0 8px 20px; font-size: 0.9rem; line-height: 1.8;">
+                <li><strong>Horizontal:</strong> 6 combos por fila × 10 filas = 60 combos</li>
+                <li><strong>Vertical:</strong> 6 combos por columna × 10 columnas = 60 combos</li>
+                <li><strong>Diagonal ↘:</strong> 6×6 = 36 combos</li>
+                <li><strong>Diagonal ↙:</strong> 6×6 = 36 combos</li>
+            </ul>
+            <p>
+                Una casilla "cuenta" para el equipo si tiene una ficha del color del equipo
+                <strong>o</strong> si es una esquina LIBRE (<code>mapaCartas[indice] === "LIBRE"</code>).
+            </p>
+        </div>
+    </div>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>marcarSequence(indices, colorJugador)</code>
+        </div>
+        <div class="fn-body">
+            <p>Se llama cuando se detecta un combo válido. Proceso:</p>
+            <ol style="margin: 8px 0 8px 20px; font-size: 0.9rem; line-height: 2;">
+                <li>Genera una clave única ordenando los índices: <code>"5,6,7,8,9"</code></li>
+                <li>Si la clave ya está en <code>combosYaMarcados</code> → sale (evita doble conteo)</li>
+                <li>Cuenta cuántas casillas del combo <em>no</em> estaban ya protegidas. Si son menos de 4 → sale (el combo comparte demasiadas casillas con un sequence anterior)</li>
+                <li>Agrega la clave a <code>combosYaMarcados</code></li>
+                <li>Agrega la clase <code>protegida-{color}</code> a cada casilla del combo (las fichas protegidas no pueden ser removidas por Jacks de 1 ojo)</li>
+                <li>Incrementa <code>secuenciasLogradas[colorJugador]</code></li>
+                <li>Si el equipo alcanzó el número de sequences necesario → escribe <code>victoria: "{color}"</code> en Firebase</li>
+            </ol>
+        </div>
+    </div>
+
+    <h3 id="game-descarte">Descarte de carta muerta</h3>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función global</span>
+            <code>window.intentarDescartarCartaMuerta()</code>
+        </div>
+        <div class="fn-body">
+            <p>
+                Se ejecuta al presionar "Descartar Carta Muerta 🗑️". Verifica que la carta seleccionada
+                sea efectivamente una carta muerta (todas sus posiciones en el tablero están ocupadas).
+                Los Jacks nunca pueden ser cartas muertas. Si es válida, llama a
+                <code>descartarYRobarSinPasarTurno()</code>.
+            </p>
+        </div>
+    </div>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>descartarYRobarSinPasarTurno(cartaDescartada)</code>
+        </div>
+        <div class="fn-body">
+            <p>
+                Elimina la carta muerta de la mano local, roba una carta del mazo usando una
+                <strong>transacción Firebase</strong> (para evitar que dos jugadores roben la misma carta),
+                actualiza la mano en Firebase y vuelve a evaluar las opciones de turno.
+                <strong>No pasa el turno</strong> — el jugador puede seguir jugando con la nueva carta.
+            </p>
+        </div>
+    </div>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>actualizarManoTrasJugada(mensajeHistorial)</code>
+        </div>
+        <div class="fn-body">
+            <p>
+                Se llama después de cada jugada válida (colocar o quitar ficha). Elimina la carta jugada
+                de la mano local, roba una carta del mazo con transacción Firebase, actualiza la mano
+                en Firebase y llama a <code>pasarTurno()</code>.
+            </p>
+            <div class="card warning" style="margin-top: 12px;">
+                <strong>¿Por qué transacción?</strong> Si dos jugadores intentaran robar del mazo al mismo
+                tiempo (imposible en el flujo normal, pero posible por latencia), una transacción garantiza
+                que cada uno obtenga una carta diferente. La transacción es atómica: lee el mazo, extrae
+                la última carta, escribe el mazo reducido — todo en una sola operación.
+            </div>
+        </div>
+    </div>
+
+    <h3 id="game-reinicio">Reinicio de estado local</h3>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>reiniciarEstadoJuegoLocal()</code>
+        </div>
+        <div class="fn-body">
+            <p>
+                Se llama cuando el juego vuelve al lobby (después de victoria, empate o abandono).
+                Resetea todas las variables locales del juego: contadores de sequences, combos marcados,
+                efectos visuales activos, overlay de Jack, historial visual y regenera el tablero limpio.
+            </p>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         JUGADOR.JS
+    ══════════════════════════════════════ -->
+    <div class="file-header" id="jugador">
+        <span class="icon">🤚</span>
+        <div class="info">
+            <h3>jugador.js</h3>
+            <p>Mano del jugador · Renderizado de cartas · Modales de reglas e historial</p>
+        </div>
+    </div>
+
+    <h3 id="jugador-mano">Mano del jugador</h3>
+
+    <table>
+        <tr><th>Variable</th><th>Tipo</th><th>Descripción</th></tr>
+        <tr><td><code>manoPropia</code></td><td>array</td><td>Array de strings con los códigos de las cartas en la mano del jugador local. Se sincroniza con Firebase.</td></tr>
+        <tr><td><code>cartaSeleccionadaIdx</code></td><td>number | null</td><td>Índice de la carta actualmente seleccionada en la mano. <code>null</code> si no hay ninguna seleccionada.</td></tr>
+    </table>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>inicializarManoFirebase()</code>
+        </div>
+        <div class="fn-body">
+            <p>
+                Registra un listener en <code>miJugadorRef.child('mano')</code>. Cada vez que la mano
+                del jugador cambia en Firebase (al robar una carta o al iniciar la partida), actualiza
+                <code>manoPropia</code> y llama a <code>renderizarMano()</code>.
+            </p>
+        </div>
+    </div>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>renderizarMano()</code>
+        </div>
+        <div class="fn-body">
+            <p>
+                Limpia y reconstruye el contenedor <code>#contenedor-cartas</code> con las cartas actuales.
+                Para cada carta:
+            </p>
+            <ul style="margin: 8px 0 8px 20px; font-size: 0.9rem; line-height: 1.8;">
+                <li>Crea un contenedor <code>.contenedor-carta-individual</code></li>
+                <li>Crea un <code>&lt;img&gt;</code> con la URL de la API de cartas</li>
+                <li>Si el índice coincide con <code>cartaSeleccionadaIdx</code>, agrega la clase <code>carta-seleccionada</code></li>
+                <li>Si la carta es <code>J1*</code> (2 ojos), agrega una etiqueta verde "➕ 2 OJOS"</li>
+                <li>Si la carta es <code>J2*</code> (1 ojo), agrega una etiqueta roja "❌ 1 OJO"</li>
+                <li>Asigna <code>onclick</code> que llama a <code>seleccionarCarta(index)</code></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="fn-block">
+        <div class="fn-header">
+            <span class="badge badge-blue">función</span>
+            <code>seleccionarCarta(index)</code>
+        </div>
+        <div class="fn-body">
+            <p>
+                Si el índice es el mismo que <code>cartaSeleccionadaIdx</code>, lo deselecciona
+                (toggle). Si es diferente, lo selecciona. Luego llama a <code>renderizarMano()</code>
+                para actualizar el estado visual.
+            </p>
+        </div>
+    </div>
+
+    <h3 id="jugador-modales">Modales de reglas e historial</h3>
+
+    <p>
+        Los modales se controlan cambiando la clase CSS (<code>oculta-modal</code>) y el
+        <code>display</code> del elemento. Se usan dos mecanismos en paralelo para garantizar
+        compatibilidad con diferentes reglas CSS que puedan estar aplicadas.
+    </p>
+
+    <table>
+        <tr><th>Función</th><th>Descripción</th></tr>
+        <tr><td><code>abrirReglas()</code></td><td>Actualiza el número de sequences necesarios para ganar (<code>#regla-victoria-dinamica</code>) con el valor actual de <code>configuracionJuego.sequencesParaGanar</code> antes de mostrar el modal.</td></tr>
+        <tr><td><code>cerrarReglas()</code></td><td>Oculta el modal de reglas.</td></tr>
+        <tr><td><code>abrirHistorial()</code></td><td>Muestra el modal de historial (la lista ya está poblada por el listener de <code>child_added</code> en <code>game.js</code>).</td></tr>
+        <tr><td><code>cerrarHistorial()</code></td><td>Oculta el modal de historial.</td></tr>
+    </table>
+
+    <!-- ══════════════════════════════════════
+         CSS
+    ══════════════════════════════════════ -->
+    <h2 id="css">Archivos de estilos CSS</h2>
+
+    <table>
+        <tr><th>Archivo</th><th>Responsabilidad</th></tr>
+        <tr>
+            <td><code>css/general.css</code></td>
+            <td>Reset base, variables de color, clases utilitarias (<code>.oculta</code>, <code>.activa</code>), sistema de toasts, overlay de Jack, modales.</td>
+        </tr>
+        <tr>
+            <td><code>css/lobby.css</code></td>
+            <td>Estilos de la pantalla de login y la sala de espera: formulario, lista de jugadores, botones de color, botón listo.</td>
+        </tr>
+        <tr>
+            <td><code>css/tablero.css</code></td>
+            <td>Grid del tablero 10×10, estilos de casillas, fichas (<code>.ficha-rojo</code>, <code>.ficha-azul</code>, <code>.ficha-verde</code>), animaciones de entrada/salida de fichas, efectos de brillo (<code>.ultima-colocada</code>, <code>.ultima-removida</code>), casillas protegidas por sequence.</td>
+        </tr>
+        <tr>
+            <td><code>css/jugador.css</code></td>
+            <td>Panel inferior de la mano del jugador, cartas individuales, carta seleccionada, etiquetas de Jack, barra superior de la mano, botones de acción, panel de victoria.</td>
+        </tr>
+    </table>
+
+    <hr>
+
+    <div class="card success">
+        <strong>✅ Documentación completa.</strong> Este documento cubre el 100% de las funciones,
+        variables, listeners y flujos del proyecto Sequence Multijugador.
+        Última actualización: Mayo 2026.
+    </div>
+
+</main>
+</div>
+
+<button class="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Volver arriba">↑</button>
+
+</body>
+</html>

@@ -38,14 +38,10 @@
     box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.8);
 }
 
-.mano h3,
-.mano span {
+.mano h3 {
     color: white;
     font-family: sans-serif;
     margin: 0;
-}
-
-.mano h3 {
     font-size: 0.85rem;
     text-align: center;
     transition: color 0.3s ease;

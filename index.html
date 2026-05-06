@@ -25,7 +25,8 @@
         <h1>Sequence 🃏</h1>
         <div class="caja-formulario">
             <h3>Ingresa tu nombre para jugar</h3>
-            <input type="text" id="input-nombre" placeholder="Ej. Carlos" autocomplete="off">
+            <input type="text" id="input-nombre" placeholder="Ej. Carlos" autocomplete="off"
+                   onkeydown="if(event.key==='Enter') entrarLobby()">
             <button onclick="entrarLobby()">Siguiente</button>
         </div>
     </div>

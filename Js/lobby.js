@@ -84,9 +84,11 @@ function seleccionarColor(color) {
     const titulo = document.getElementById('titulo-equipo');
     titulo.innerHTML = `Equipo: <span id="nombre-editable" contenteditable="true" spellcheck="false" style="outline: none;">${nombreMostrar}</span>`;
 
-    document.getElementById('nombre-editable').addEventListener('input', function () {
+    // Usar oninput en lugar de addEventListener para evitar listeners duplicados
+    // al cambiar de color múltiples veces
+    document.getElementById('nombre-editable').oninput = function () {
         cambiarNombreEquipo(this.innerText);
-    });
+    };
 
     document.querySelectorAll('.btn-color').forEach(btn => btn.classList.remove('color-activo'));
     document.querySelector(`.btn-color.${color}`).classList.add('color-activo');
@@ -173,6 +175,7 @@ function verificarReglasParaIniciar() {
 
     const todosListos = jugadoresEnSala.every(j => j.listo);
     if (!todosListos) {
+        mensajeValidacion.classList.remove('listo');
         mensajeValidacion.innerText = "Faltan jugadores por confirmar.";
         return;
     }
@@ -189,20 +192,24 @@ function verificarReglasParaIniciar() {
         if (totalJugadores % 2 === 0 && cantidades[0] === cantidades[1]) {
             juegoValido = true;
         } else {
+            mensajeValidacion.classList.remove('listo');
             mensajeValidacion.innerText = "Para 2 equipos, deben ser pares y estar equilibrados.";
         }
     } else if (numEquipos === 3) {
         if (totalJugadores % 3 === 0 && cantidades[0] === cantidades[1] && cantidades[1] === cantidades[2]) {
             juegoValido = true;
         } else {
+            mensajeValidacion.classList.remove('listo');
             mensajeValidacion.innerText = "Para 3 equipos, deben tener la misma cantidad de jugadores.";
         }
     } else {
+        mensajeValidacion.classList.remove('listo');
         mensajeValidacion.innerText = "Debe haber al menos 2 equipos para jugar.";
     }
 
     if (!juegoValido) return;
 
+    mensajeValidacion.classList.add('listo');
     mensajeValidacion.innerText = "¡Todo listo! Iniciando partida...";
 
     if (jugadoresEnSala[0].id === miJugadorId) {
@@ -261,7 +268,12 @@ estadoJuegoRef.on('value', (snapshot) => {
     const bloqueCartas   = document.getElementById('interfaz-cartas');
     const bloqueVictoria = document.getElementById('interfaz-victoria-mano');
 
+    // Si los elementos del juego no existen aún (jugador en lobby), ignorar
+    if (!bloqueCartas || !bloqueVictoria) return;
+
     if (estado && estado.abandonado) {
+        // Solo mostrar si el juego ya estaba iniciado visualmente
+        if (!juegoIniciadoVisualmente) return;
         bloqueCartas.classList.add('oculta');
         bloqueVictoria.classList.remove('oculta');
         document.getElementById('texto-victoria-mano').innerText =
@@ -274,6 +286,7 @@ estadoJuegoRef.on('value', (snapshot) => {
     }
 
     if (estado && estado.empate) {
+        if (!juegoIniciadoVisualmente) return;
         bloqueCartas.classList.add('oculta');
         bloqueVictoria.classList.remove('oculta');
         const textoWin = document.getElementById('texto-victoria-mano');
@@ -324,7 +337,15 @@ estadoJuegoRef.on('value', (snapshot) => {
     if (estado.iniciado === true && !juegoIniciadoVisualmente) {
         partidaIniciada = true;
         juegoIniciadoVisualmente = true;
+
+        // reiniciarEstadoJuegoLocal() llama a generarTablero() que crea el DOM del tablero.
+        // Es CRÍTICO llamarlo ANTES de iniciarListenerTablero() para que las casillas
+        // existan cuando lleguen los primeros datos de Firebase.
         reiniciarEstadoJuegoLocal();
+
+        // Activar el listener del tablero DESPUÉS de que el DOM esté listo
+        iniciarListenerTablero();
+
         inicializarReglas(estado.jugadoresTotales, estado.equiposTotales);
         inicializarManoFirebase();
 
@@ -344,6 +365,12 @@ window.volverAlLobby = function () {
     if (jugadoresEnSala.length === 0 || jugadoresEnSala[0].id !== miJugadorId) return;
 
     yaLimpioSala = false;
+
+    // Desactivar el listener del tablero para que se pueda re-registrar en la próxima partida
+    if (typeof tableroListenerActivo !== 'undefined') {
+        baseDatos.ref('sala_activa/tablero').off('value');
+        tableroListenerActivo = false;
+    }
 
     estadoJuegoRef.set(null);
     baseDatos.ref('sala_activa/tablero').set(null);

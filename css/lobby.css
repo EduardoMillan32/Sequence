@@ -10,9 +10,13 @@
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 
-.caja-formulario h1 {
+/* Títulos principales de cada pantalla */
+#pantalla-login h1,
+#pantalla-lobby h1 {
     font-size: 2.2rem;
-    margin-bottom: 5px;
+    margin-bottom: 16px;
+    text-align: center;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
 }
 
 .caja-formulario h3, .caja-lobby h3 {
@@ -72,10 +76,9 @@
 
 #lista-jugadores {
     list-style: none;
-    padding: 0;
+    padding: 12px;
     text-align: left;
     background: rgba(52, 73, 94, 0.8);
-    padding: 12px;
     border-radius: 8px;
     max-height: 200px;
     overflow-y: auto;
@@ -91,11 +94,28 @@
     border-bottom: none;
 }
 
+/* Botón Listo: color verde inicial */
+#btn-listo {
+    background-color: #2ecc71;
+    margin-top: 10px;
+    width: 100%;
+}
+
+#btn-listo:hover {
+    box-shadow: 0 4px 12px rgba(46, 204, 113, 0.4);
+}
+
 .alerta { 
     color: #e74c3c;
     font-weight: bold; 
     margin-top: 15px;
     font-size: 0.9rem;
+    min-height: 1.2em;
+}
+
+/* Mensaje de validación positivo */
+.alerta.listo {
+    color: #2ecc71;
 }
 
 /* Responsive para pantallas muy pequeñas */
