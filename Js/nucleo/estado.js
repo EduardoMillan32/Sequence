@@ -3,6 +3,21 @@
 // Este módulo NO importa nada del proyecto — solo exporta estado mutable.
 
 // ============================================
+// ESTADO DE SESIÓN / SALA DINÁMICA
+// ============================================
+export let idSala   = null;   // Código de sala normalizado (ej. "casa")
+export let rutaSala = null;   // Ruta base en Firebase (ej. "casa") — igual al idSala
+
+export function setIdSala(val) {
+    idSala   = val;
+    // Usamos el código de sala directamente como nodo raíz en Firebase
+    // (igual que el sistema original usaba 'sala_activa' como nodo raíz).
+    // Esto garantiza compatibilidad con las reglas de seguridad de Firebase
+    // que permiten lectura/escritura en cualquier nodo raíz.
+    rutaSala = val ? val : null;
+}
+
+// ============================================
 // ESTADO DEL JUGADOR LOCAL
 // ============================================
 export let miJugadorId = null;

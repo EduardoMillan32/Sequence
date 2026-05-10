@@ -21,12 +21,39 @@ function cartaManoACodigoAPI(carta) {
 }
 
 // ============================================
-// BANDERA: bloquea el listener de Firebase mientras se procesa una jugada
+// CONTADOR: bloquea el listener de Firebase mientras se procesa una jugada.
+// Se usa un contador (no un booleano) porque Firebase puede reintentar la
+// transacción del mazo varias veces, disparando el listener múltiples veces
+// antes de que la transacción se confirme. Con un booleano solo se bloqueaba
+// el primer disparo; los siguientes sobreescribían la mano local con la versión
+// desactualizada de Firebase → las cartas "desaparecían" visualmente.
 // ============================================
-let _ignorarSiguienteActualizacionMano = false;
+let _bloqueosManoRestantes = 0;
 
 export function ignorarSiguienteActualizacionMano() {
-    _ignorarSiguienteActualizacionMano = true;
+    // Incrementamos el contador: cada reintento de la transacción disparará
+    // el listener una vez, y cada disparo decrementará el contador.
+    // Usamos 2 como valor inicial para cubrir el disparo optimista (null)
+    // y el disparo real (valor del servidor) que Firebase hace en cada transacción.
+    _bloqueosManoRestantes += 2;
+
+    // Timeout de seguridad: si la transacción tarda más de 8 segundos
+    // (p.ej. por pérdida de conexión), liberamos los bloqueos automáticamente
+    // para que la mano no quede vacía indefinidamente.
+    setTimeout(() => {
+        if (_bloqueosManoRestantes > 0) {
+            _bloqueosManoRestantes = 0;
+            renderizarMano();
+        }
+    }, 8000);
+}
+
+// Libera todos los bloqueos pendientes y fuerza un re-render de la mano.
+// Se llama cuando una transacción falla o es abortada, para que el listener
+// de Firebase pueda volver a actualizar la mano normalmente.
+export function liberarBloqueosYRenderizar() {
+    _bloqueosManoRestantes = 0;
+    renderizarMano();
 }
 
 // ============================================
@@ -38,8 +65,10 @@ export function inicializarManoFirebase() {
         // Si hay una jugada en curso (transacción del mazo aún no confirmada),
         // ignoramos esta actualización para no sobreescribir el estado local
         // con la mano desactualizada (sin la carta nueva robada del mazo).
-        if (_ignorarSiguienteActualizacionMano) {
-            _ignorarSiguienteActualizacionMano = false;
+        // El contador garantiza que se ignoren TODOS los disparos intermedios,
+        // no solo el primero (que era el bug: con booleano solo se bloqueaba uno).
+        if (_bloqueosManoRestantes > 0) {
+            _bloqueosManoRestantes--;
             return;
         }
         estado.setManoPropia(snapshot.exists() ? snapshot.val() : []);

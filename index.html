@@ -24,16 +24,22 @@
     <div id="pantalla-login" class="pantalla activa">
         <h1>Sequence 🃏</h1>
         <div class="caja-formulario">
-            <h3>Ingresa tu nombre para jugar</h3>
-            <input type="text" id="input-nombre" placeholder="Ej. Carlos" autocomplete="off"
-                   onkeydown="if(event.key==='Enter') entrarLobby()">
-            <button onclick="entrarLobby()">Siguiente</button>
+            <h3>Ingresa tus datos para jugar</h3>
+            <input type="text" id="input-nombre" placeholder="Tu nombre (Ej. Carlos)" autocomplete="off"
+                   onkeydown="if(event.key==='Enter') document.getElementById('input-sala').focus()">
+            <input type="text" id="input-sala" placeholder="Código de sala (Ej. casa)" autocomplete="off"
+                   onkeydown="if(event.key==='Enter') entrarLobby()"
+                   style="margin-top: 10px;">
+            <button id="btn-entrar" onclick="entrarLobby()">Entrar a la Sala</button>
         </div>
     </div>
 
     <!-- ===== PANTALLA: LOBBY ===== -->
     <div id="pantalla-lobby" class="pantalla oculta">
         <h1>Sala de Espera ⏳</h1>
+        <p style="text-align:center; color:#f1c40f; font-size:0.95rem; margin: -8px 0 8px;">
+            Código de sala: <strong id="codigo-sala-display" style="letter-spacing:2px;">—</strong>
+        </p>
         <div class="caja-lobby">
             <h3>Jugadores Conectados</h3>
             <ul id="lista-jugadores"></ul>

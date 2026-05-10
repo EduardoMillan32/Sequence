@@ -1,17 +1,12 @@
 // Js/pantallas/lobby.js
-// Sala de espera, listeners Firebase, inicio de partida
+// Sala de espera, listeners Firebase, inicio de partida.
+// Usa la sala dinámica: estado.rutaSala = "{idSala}" (ej. "casa")
 
 import { baseDatos, configuracionJuego, inicializarReglas, mostrarToast } from '../nucleo/config.js';
 import { obtenerMazoBarajado, reiniciarEstadoJuegoLocal, iniciarListenerTablero, setTableroListenerActivo } from '../nucleo/juego.js';
 import { inicializarManoFirebase } from '../nucleo/jugador.js';
+import { inicializarSesion, iniciarListenerPresencia } from '../nucleo/sesion.js';
 import * as estado from '../nucleo/estado.js';
-
-// ============================================
-// REFERENCIAS FIREBASE
-// ============================================
-const salaRef           = baseDatos.ref('sala_activa/jugadores');
-const estadoJuegoRef    = baseDatos.ref('sala_activa/estado');
-const nombresEquiposRef = baseDatos.ref('sala_activa/nombresEquipos');
 
 // ============================================
 // ELEMENTOS DEL DOM
@@ -29,60 +24,83 @@ let nombresEquipos  = { rojo: "Rojo", azul: "Azul", verde: "Verde" };
 let partidaIniciada = false;
 let yaLimpioSala    = false;
 
-// ============================================
-// LISTENER: Nombres de equipos
-// ============================================
-nombresEquiposRef.on('value', (snapshot) => {
-    nombresEquipos = snapshot.exists()
-        ? snapshot.val()
-        : { rojo: "Rojo", azul: "Azul", verde: "Verde" };
-
-    const spanEditable = document.getElementById('nombre-editable');
-    if (spanEditable && estado.miJugador.color && nombresEquipos[estado.miJugador.color]) {
-        if (document.activeElement !== spanEditable) {
-            spanEditable.innerText = nombresEquipos[estado.miJugador.color];
-        }
-    }
-});
+// Referencias Firebase dinámicas — se inicializan al entrar al lobby
+let salaRef           = null;
+let estadoJuegoRef    = null;
+let nombresEquiposRef = null;
 
 // ============================================
-// ENTRADA AL LOBBY
+// ENTRADA AL LOBBY — llamada desde el botón de login
 // ============================================
-function entrarLobby() {
+async function entrarLobby() {
     const nombre = document.getElementById('input-nombre').value.trim();
-    if (nombre === "") return mostrarToast("Por favor ingresa un nombre válido.", "warning");
+    const sala   = document.getElementById('input-sala').value.trim();
 
-    estado.setMiJugadorProp('nombre', nombre);
+    if (!nombre || !sala) {
+        return mostrarToast("Por favor ingresa tu nombre y el código de sala.", "warning");
+    }
 
-    const idAnterior = localStorage.getItem('sequence_jugador_id');
-    const promesaLimpieza = idAnterior
-        ? salaRef.child(idAnterior).remove()
-        : Promise.resolve();
+    // Deshabilitar botón para evitar doble envío
+    const btnEntrar = document.getElementById('btn-entrar');
+    if (btnEntrar) {
+        btnEntrar.disabled   = true;
+        btnEntrar.innerText  = "Conectando...";
+    }
 
-    const entrarConDatos = () => {
-        const ref = salaRef.push(estado.miJugador);
-        estado.setMiJugadorRef(ref);
-        estado.setMiJugadorId(ref.key);
+    const ok = await inicializarSesion(nombre, sala);
 
-        localStorage.setItem('sequence_jugador_id', estado.miJugadorId);
+    if (!ok) {
+        if (btnEntrar) {
+            btnEntrar.disabled  = false;
+            btnEntrar.innerText = "Entrar a la Sala";
+        }
+        return;
+    }
 
-        estado.miJugadorRef.onDisconnect().remove();
-        estadoJuegoRef.onDisconnect().update({
-            abandonado: true,
-            nombreAbandono: estado.miJugador.nombre
-        });
+    // Inicializar referencias Firebase con la sala dinámica
+    salaRef           = baseDatos.ref(`${estado.rutaSala}/jugadores`);
+    estadoJuegoRef    = baseDatos.ref(`${estado.rutaSala}/estado`);
+    nombresEquiposRef = baseDatos.ref(`${estado.rutaSala}/nombresEquipos`);
 
-        pantallaLogin.classList.remove('activa');
-        pantallaLogin.classList.add('oculta');
-        pantallaLobby.classList.remove('oculta');
-        pantallaLobby.classList.add('activa');
-    };
+    // Iniciar listener de presencia (detecta desconexiones y migra host)
+    iniciarListenerPresencia();
 
-    promesaLimpieza.then(entrarConDatos).catch(entrarConDatos);
+    // Iniciar listeners de Firebase
+    iniciarListenerNombresEquipos();
+    iniciarListenerJugadores();
+    iniciarListenerEstadoJuego();
+
+    // Mostrar pantalla de lobby
+    pantallaLogin.classList.remove('activa');
+    pantallaLogin.classList.add('oculta');
+    pantallaLobby.classList.remove('oculta');
+    pantallaLobby.classList.add('activa');
+
+    // Mostrar el código de sala en el lobby
+    const spanSala = document.getElementById('codigo-sala-display');
+    if (spanSala) spanSala.innerText = estado.idSala;
 }
 
 // Exponer en window para el onclick del HTML
 window.entrarLobby = entrarLobby;
+
+// ============================================
+// LISTENER: Nombres de equipos
+// ============================================
+function iniciarListenerNombresEquipos() {
+    nombresEquiposRef.on('value', (snapshot) => {
+        nombresEquipos = snapshot.exists()
+            ? snapshot.val()
+            : { rojo: "Rojo", azul: "Azul", verde: "Verde" };
+
+        const spanEditable = document.getElementById('nombre-editable');
+        if (spanEditable && estado.miJugador.color && nombresEquipos[estado.miJugador.color]) {
+            if (document.activeElement !== spanEditable) {
+                spanEditable.innerText = nombresEquipos[estado.miJugador.color];
+            }
+        }
+    });
+}
 
 // ============================================
 // SELECCIÓN DE COLOR / EQUIPO
@@ -127,42 +145,58 @@ window.alternarListo = alternarListo;
 // ============================================
 // LISTENER: Jugadores en sala
 // ============================================
-salaRef.on('value', (snapshot) => {
-    estado.setJugadoresEnSala([]);
-    const datos = snapshot.val();
+function iniciarListenerJugadores() {
+    salaRef.on('value', (snapshot) => {
+        estado.setJugadoresEnSala([]);
+        const datos = snapshot.val();
 
-    if (datos) {
-        Object.keys(datos).forEach(key => {
-            const jugador = datos[key];
-            if (jugador && jugador.nombre && jugador.nombre !== "undefined") {
-                jugador.id = key;
-                estado.pushJugadorEnSala(jugador);
-            }
-        });
-    } else {
-        estadoJuegoRef.set(null);
-        partidaIniciada = false;
-    }
+        if (datos) {
+            Object.keys(datos).forEach(key => {
+                const jugador = datos[key];
+                if (jugador && jugador.nombre && jugador.nombre !== "undefined") {
+                    jugador.id = key;
+                    estado.pushJugadorEnSala(jugador);
+                }
+            });
+        } else {
+            // Sala vacía: limpiar estado del juego
+            if (estadoJuegoRef) estadoJuegoRef.set(null);
+            partidaIniciada = false;
+        }
 
-    if (estado.miJugadorId && estado.miJugador.nombre &&
-        !estado.jugadoresEnSala.find(j => j.id === estado.miJugadorId)) {
-        estado.unshiftJugadorEnSala({ ...estado.miJugador, id: estado.miJugadorId });
-        salaRef.child(estado.miJugadorId).set(estado.miJugador);
-    }
+        // Asegurar que el jugador local siempre esté en la lista
+        if (estado.miJugadorId && estado.miJugador.nombre &&
+            !estado.jugadoresEnSala.find(j => j.id === estado.miJugadorId)) {
+            estado.unshiftJugadorEnSala({ ...estado.miJugador, id: estado.miJugadorId });
+            salaRef.child(estado.miJugadorId).set(estado.miJugador);
+        }
 
-    if (!yaLimpioSala && estado.miJugadorId &&
-        estado.jugadoresEnSala.length === 1 &&
-        estado.jugadoresEnSala[0].id === estado.miJugadorId) {
-        yaLimpioSala = true;
-        nombresEquiposRef.remove();
-        estadoJuegoRef.set(null);
-        baseDatos.ref('sala_activa/tablero').set(null);
-        baseDatos.ref('sala_activa/mazo').remove();
-    }
+        // Si somos el único jugador, limpiar la sala (partida anterior)
+        if (!yaLimpioSala && estado.miJugadorId &&
+            estado.jugadoresEnSala.length === 1 &&
+            estado.jugadoresEnSala[0].id === estado.miJugadorId) {
+            yaLimpioSala = true;
+            nombresEquiposRef.remove();
+            estadoJuegoRef.set(null);
+            baseDatos.ref(`${estado.rutaSala}/tablero`).set(null);
+            baseDatos.ref(`${estado.rutaSala}/mazo`).remove();
+        }
 
-    actualizarVistaLobby();
-    verificarReglasParaIniciar();
-});
+        // Si hay múltiples jugadores pero el estado tiene 'abandonado: true'
+        // (residuo de una partida anterior), lo limpiamos para desbloquear el lobby.
+        if (estado.jugadoresEnSala.length > 0) {
+            estadoJuegoRef.once('value', (snap) => {
+                const est = snap.val();
+                if (est && est.abandonado && !est.iniciado) {
+                    estadoJuegoRef.set(null);
+                }
+            });
+        }
+
+        actualizarVistaLobby();
+        verificarReglasParaIniciar();
+    });
+}
 
 // ============================================
 // VISTA DEL LOBBY
@@ -231,9 +265,10 @@ function verificarReglasParaIniciar() {
     mensajeValidacion.classList.add('listo');
     mensajeValidacion.innerText = "¡Todo listo! Iniciando partida...";
 
+    // Solo el primer jugador (anfitrión) inicia la partida
     if (estado.jugadoresEnSala[0].id === estado.miJugadorId) {
         partidaIniciada = true;
-        baseDatos.ref('sala_activa/tablero').set(null);
+        baseDatos.ref(`${estado.rutaSala}/tablero`).set(null);
 
         const verdes = estado.jugadoresEnSala.filter(j => j.color === 'verde');
         const azules = estado.jugadoresEnSala.filter(j => j.color === 'azul');
@@ -258,21 +293,22 @@ function verificarReglasParaIniciar() {
             for (let i = 0; i < configuracionJuego.cartasPorJugador; i++) {
                 mano.push(mazoMaestro.pop());
             }
-            baseDatos.ref(`sala_activa/jugadores/${jugador.id}`).update({ mano });
+            baseDatos.ref(`${estado.rutaSala}/jugadores/${jugador.id}`).update({ mano });
         });
 
-        baseDatos.ref('sala_activa/mazo').set(mazoMaestro);
+        baseDatos.ref(`${estado.rutaSala}/mazo`).set(mazoMaestro);
 
         estadoJuegoRef.set({
-            iniciado: true,
+            iniciado:        true,
+            host:            estado.miJugadorId,
             jugadoresTotales: totalJugadores,
-            equiposTotales: numEquipos,
-            turnoActual: primerTurnoId,
-            ordenTurnos: ordenTurnos,
-            marcaTiempo: Date.now(),
-            turnosPasados: 0,
-            empate: false,
-            historial: { 0: "🎮 <b>¡La partida ha comenzado!</b>" }
+            equiposTotales:  numEquipos,
+            turnoActual:     primerTurnoId,
+            ordenTurnos:     ordenTurnos,
+            marcaTiempo:     Date.now(),
+            turnosPasados:   0,
+            empate:          false,
+            historial:       { 0: "🎮 <b>¡La partida ha comenzado!</b>" }
         });
     }
 }
@@ -280,97 +316,104 @@ function verificarReglasParaIniciar() {
 // ============================================
 // LISTENER: Estado del juego
 // ============================================
-estadoJuegoRef.on('value', (snapshot) => {
-    const estadoJuego = snapshot.val();
-    if (estado.miJugador.nombre === "") return;
+function iniciarListenerEstadoJuego() {
+    estadoJuegoRef.on('value', (snapshot) => {
+        const estadoJuego = snapshot.val();
+        if (estado.miJugador.nombre === "") return;
 
-    const bloqueCartas   = document.getElementById('interfaz-cartas');
-    const bloqueVictoria = document.getElementById('interfaz-victoria-mano');
+        const bloqueCartas   = document.getElementById('interfaz-cartas');
+        const bloqueVictoria = document.getElementById('interfaz-victoria-mano');
 
-    if (!bloqueCartas || !bloqueVictoria) return;
+        if (!bloqueCartas || !bloqueVictoria) return;
 
-    if (estadoJuego && estadoJuego.abandonado) {
-        if (!estado.juegoIniciadoVisualmente) return;
-        bloqueCartas.classList.add('oculta');
-        bloqueVictoria.classList.remove('oculta');
-        document.getElementById('texto-victoria-mano').innerText =
-            `PARTIDA TERMINADA: ${estadoJuego.nombreAbandono} abandonó la sala. 🚪`;
-        document.getElementById('texto-victoria-mano').style.color = "#f1c40f";
-        const btnRevancha = document.getElementById('btn-revancha');
-        btnRevancha.innerText = "Volver al Lobby principal";
-        btnRevancha.disabled = false;
-        return;
-    }
-
-    if (estadoJuego && estadoJuego.empate) {
-        if (!estado.juegoIniciadoVisualmente) return;
-        bloqueCartas.classList.add('oculta');
-        bloqueVictoria.classList.remove('oculta');
-        const textoWin = document.getElementById('texto-victoria-mano');
-        textoWin.innerText = "¡EMPATE TÉCNICO! 🤝";
-        textoWin.style.color = "#bdc3c7";
-        const btnRevancha = document.getElementById('btn-revancha');
-        const esAnfitrion = estado.jugadoresEnSala.length > 0 &&
-                            estado.jugadoresEnSala[0].id === estado.miJugadorId;
-        btnRevancha.innerText = esAnfitrion ? "Volver al Lobby 🔄" : "Esperando al anfitrión...";
-        btnRevancha.disabled  = !esAnfitrion;
-        return;
-    }
-
-    if (!estadoJuego || !estadoJuego.iniciado) {
-        if (estado.juegoIniciadoVisualmente) {
-            estado.setJuegoIniciadoVisualmente(false);
-            partidaIniciada = false;
-
-            bloqueCartas.classList.remove('oculta');
-            bloqueVictoria.classList.add('oculta');
-
-            pantallaJuego.classList.remove('activa');
-            pantallaJuego.classList.add('oculta');
-            pantallaLobby.classList.remove('oculta');
-            pantallaLobby.classList.add('activa');
-
-            estado.setMiJugadorProp('listo', false);
-            btnListo.innerText = "Estoy Listo";
-            btnListo.style.backgroundColor = "";
-            if (estado.miJugadorRef) estado.miJugadorRef.update({ listo: false });
+        // Partida abandonada
+        if (estadoJuego && estadoJuego.abandonado) {
+            if (!estado.juegoIniciadoVisualmente) return;
+            bloqueCartas.classList.add('oculta');
+            bloqueVictoria.classList.remove('oculta');
+            document.getElementById('texto-victoria-mano').innerText =
+                `PARTIDA TERMINADA: ${estadoJuego.nombreAbandono} abandonó la sala. 🚪`;
+            document.getElementById('texto-victoria-mano').style.color = "#f1c40f";
+            const btnRevancha = document.getElementById('btn-revancha');
+            btnRevancha.innerText = "Volver al Lobby";
+            btnRevancha.disabled  = false;
+            return;
         }
-        return;
-    }
 
-    if (estadoJuego.victoria) {
-        bloqueCartas.classList.add('oculta');
-        bloqueVictoria.classList.remove('oculta');
-        const nombreGanador = nombresEquipos[estadoJuego.victoria] || estadoJuego.victoria;
-        const textoWin = document.getElementById('texto-victoria-mano');
-        textoWin.innerText = `¡GANA EL EQUIPO ${nombreGanador.toUpperCase()}! 🎉`;
-        textoWin.style.color = "#f1c40f";
-        const btnRevancha = document.getElementById('btn-revancha');
-        const esAnfitrion = estado.jugadoresEnSala.length > 0 &&
-                            estado.jugadoresEnSala[0].id === estado.miJugadorId;
-        btnRevancha.innerText = esAnfitrion ? "Volver al Lobby 🔄" : "Esperando al anfitrión...";
-        btnRevancha.disabled  = !esAnfitrion;
-        return;
-    }
+        // Empate técnico
+        if (estadoJuego && estadoJuego.empate) {
+            if (!estado.juegoIniciadoVisualmente) return;
+            bloqueCartas.classList.add('oculta');
+            bloqueVictoria.classList.remove('oculta');
+            const textoWin = document.getElementById('texto-victoria-mano');
+            textoWin.innerText = "¡EMPATE TÉCNICO! 🤝";
+            textoWin.style.color = "#bdc3c7";
+            const btnRevancha = document.getElementById('btn-revancha');
+            const esAnfitrion = estado.jugadoresEnSala.length > 0 &&
+                                estado.jugadoresEnSala[0].id === estado.miJugadorId;
+            btnRevancha.innerText = esAnfitrion ? "Volver al Lobby 🔄" : "Esperando al anfitrión...";
+            btnRevancha.disabled  = !esAnfitrion;
+            return;
+        }
 
-    if (estadoJuego.iniciado === true && !estado.juegoIniciadoVisualmente) {
-        partidaIniciada = true;
-        estado.setJuegoIniciadoVisualmente(true);
+        // Sin partida activa → volver al lobby
+        if (!estadoJuego || !estadoJuego.iniciado) {
+            if (estado.juegoIniciadoVisualmente) {
+                estado.setJuegoIniciadoVisualmente(false);
+                partidaIniciada = false;
 
-        reiniciarEstadoJuegoLocal();
-        iniciarListenerTablero();
+                bloqueCartas.classList.remove('oculta');
+                bloqueVictoria.classList.add('oculta');
 
-        inicializarReglas(estadoJuego.jugadoresTotales, estadoJuego.equiposTotales);
-        inicializarManoFirebase();
+                pantallaJuego.classList.remove('activa');
+                pantallaJuego.classList.add('oculta');
+                pantallaLobby.classList.remove('oculta');
+                pantallaLobby.classList.add('activa');
 
-        setTimeout(() => {
-            pantallaLobby.classList.remove('activa');
-            pantallaLobby.classList.add('oculta');
-            pantallaJuego.classList.remove('oculta');
-            pantallaJuego.classList.add('activa');
-        }, 1000);
-    }
-});
+                estado.setMiJugadorProp('listo', false);
+                btnListo.innerText = "Estoy Listo";
+                btnListo.style.backgroundColor = "";
+                if (estado.miJugadorRef) estado.miJugadorRef.update({ listo: false });
+            }
+            return;
+        }
+
+        // Victoria
+        if (estadoJuego.victoria) {
+            bloqueCartas.classList.add('oculta');
+            bloqueVictoria.classList.remove('oculta');
+            const nombreGanador = nombresEquipos[estadoJuego.victoria] || estadoJuego.victoria;
+            const textoWin = document.getElementById('texto-victoria-mano');
+            textoWin.innerText = `¡GANA EL EQUIPO ${nombreGanador.toUpperCase()}! 🎉`;
+            textoWin.style.color = "#f1c40f";
+            const btnRevancha = document.getElementById('btn-revancha');
+            const esAnfitrion = estado.jugadoresEnSala.length > 0 &&
+                                estado.jugadoresEnSala[0].id === estado.miJugadorId;
+            btnRevancha.innerText = esAnfitrion ? "Volver al Lobby 🔄" : "Esperando al anfitrión...";
+            btnRevancha.disabled  = !esAnfitrion;
+            return;
+        }
+
+        // Partida iniciada → pasar a pantalla de juego
+        if (estadoJuego.iniciado === true && !estado.juegoIniciadoVisualmente) {
+            partidaIniciada = true;
+            estado.setJuegoIniciadoVisualmente(true);
+
+            reiniciarEstadoJuegoLocal();
+            iniciarListenerTablero();
+
+            inicializarReglas(estadoJuego.jugadoresTotales, estadoJuego.equiposTotales);
+            inicializarManoFirebase();
+
+            setTimeout(() => {
+                pantallaLobby.classList.remove('activa');
+                pantallaLobby.classList.add('oculta');
+                pantallaJuego.classList.remove('oculta');
+                pantallaJuego.classList.add('activa');
+            }, 1000);
+        }
+    });
+}
 
 // ============================================
 // VOLVER AL LOBBY
@@ -381,16 +424,16 @@ function volverAlLobby() {
 
     yaLimpioSala = false;
 
-    baseDatos.ref('sala_activa/tablero').off('value');
+    baseDatos.ref(`${estado.rutaSala}/tablero`).off('value');
     setTableroListenerActivo(false);
 
     estadoJuegoRef.set(null);
-    baseDatos.ref('sala_activa/tablero').set(null);
+    baseDatos.ref(`${estado.rutaSala}/tablero`).set(null);
     nombresEquiposRef.remove();
-    baseDatos.ref('sala_activa/mazo').set(null);
-    baseDatos.ref('sala_activa/estado/ultimoJack').remove();
+    baseDatos.ref(`${estado.rutaSala}/mazo`).set(null);
+    baseDatos.ref(`${estado.rutaSala}/estado/ultimoJack`).remove();
     estado.jugadoresEnSala.forEach(j => {
-        baseDatos.ref(`sala_activa/jugadores/${j.id}/mano`).remove();
+        baseDatos.ref(`${estado.rutaSala}/jugadores/${j.id}/mano`).remove();
     });
 }
 
@@ -398,19 +441,9 @@ function volverAlLobby() {
 window.volverAlLobby = volverAlLobby;
 
 // ============================================
-// LIMPIEZA AL CERRAR / RECARGAR LA PÁGINA
-// ============================================
-window.addEventListener('beforeunload', () => {
-    if (estado.miJugadorRef) {
-        estado.miJugadorRef.remove();
-    }
-    localStorage.removeItem('sequence_jugador_id');
-});
-
-// ============================================
 // CAMBIAR NOMBRE DE EQUIPO
 // ============================================
 window.cambiarNombreEquipo = function (nuevoNombre) {
-    if (!estado.miJugador.color || nuevoNombre.trim() === "") return;
+    if (!estado.miJugador.color || nuevoNombre.trim() === "" || !nombresEquiposRef) return;
     nombresEquiposRef.child(estado.miJugador.color).set(nuevoNombre.trim());
 };

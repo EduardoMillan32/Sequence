@@ -15,7 +15,10 @@ import './nucleo/jugador.js';
 // 4. Juego: lógica completa (depende de config, estado, tablero, jugador)
 import './nucleo/juego.js';
 
-// 5. Lobby: sala de espera e inicio de partida (depende de todo lo anterior)
+// 5. Sesión: login con salas, presencia y limpieza (depende de config y estado)
+import './nucleo/sesion.js';
+
+// 6. Lobby: sala de espera e inicio de partida (depende de todo lo anterior)
 import './pantallas/lobby.js';
 
 // Generar el tablero al cargar la página
