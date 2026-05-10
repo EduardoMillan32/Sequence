@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Sequence: Multijugador</title>
 
-    <link rel="stylesheet" href="css/general.css">
-    <link rel="stylesheet" href="css/lobby.css">
-    <link rel="stylesheet" href="css/tablero.css">
-    <link rel="stylesheet" href="css/jugador.css">
+    <link rel="stylesheet" href="css/base/general.css">
+    <link rel="stylesheet" href="css/pantallas/lobby.css">
+    <link rel="stylesheet" href="css/componentes/tablero.css">
+    <link rel="stylesheet" href="css/componentes/jugador.css">
 </head>
 <body>
 
@@ -122,16 +122,12 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
+    <!-- Firebase SDK (debe cargarse antes del módulo principal) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 
-    <!-- Módulos del juego (orden de carga importa) -->
-    <script src="Js/config.js"></script>
-    <script src="Js/lobby.js"></script>
-    <script src="Js/tablero.js"></script>
-    <script src="Js/game.js"></script>
-    <script src="Js/jugador.js"></script>
+    <!-- Módulo principal (carga todo el juego como ES6 modules) -->
+    <script type="module" src="Js/principal.js"></script>
 
 </body>
 </html>
