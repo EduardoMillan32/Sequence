@@ -9,6 +9,25 @@ import * as estado from './estado.js';
 
 const TAMANO_TABLERO = 10;
 
+// ============================================
+// CACHÉ DE CASILLAS DEL DOM
+// Evita llamar document.querySelectorAll('.casilla') en cada operación.
+// Se inicializa una sola vez en generarTablero() y se reutiliza en todo el módulo.
+// ============================================
+let _cacheCasillas = null;
+
+function getCasillas() {
+    if (!_cacheCasillas || _cacheCasillas.length === 0) {
+        _cacheCasillas = document.querySelectorAll('.casilla');
+    }
+    return _cacheCasillas;
+}
+
+/** Invalida el caché cuando se regenera el tablero */
+export function invalidarCacheCasillas() {
+    _cacheCasillas = null;
+}
+
 let secuenciasLogradas = { rojo: 0, azul: 0, verde: 0 };
 let combosYaMarcados   = new Set();
 
@@ -126,7 +145,7 @@ function limpiarEfectosAnteriores() {
 // COLOCAR / QUITAR FICHA VISUAL
 // ============================================
 function colocarFichaVisual(indice, color) {
-    const casillas = document.querySelectorAll('.casilla');
+    const casillas = getCasillas();
     if (casillas[indice].querySelector('.ficha')) return;
 
     if (timerUltimaColocada) { clearTimeout(timerUltimaColocada); timerUltimaColocada = null; }
@@ -169,7 +188,7 @@ function colocarFichaVisual(indice, color) {
 }
 
 function quitarFichaVisual(indice) {
-    const casillas = document.querySelectorAll('.casilla');
+    const casillas = getCasillas();
     const casilla  = casillas[indice];
     const ficha    = casilla.querySelector('.ficha');
     if (!ficha) return;
@@ -204,7 +223,7 @@ export function evaluarOpcionesDeTurno() {
 
     let tieneJugada      = false;
     let tieneCartaMuerta = false;
-    const casillas = document.querySelectorAll('.casilla');
+    const casillas = getCasillas();
 
     if (estado.manoPropia && estado.manoPropia.length > 0) {
         for (const carta of estado.manoPropia) {
@@ -293,7 +312,7 @@ function intentarPonerFicha(indiceTablero, cartaTablero) {
     if (cartaTablero === "LIBRE")              return mostrarToast("Las esquinas son comodines para todos.", "info");
 
     const cartaEnMano   = estado.manoPropia[estado.cartaSeleccionadaIdx];
-    const casillas      = document.querySelectorAll('.casilla');
+    const casillas      = getCasillas();
     const casillaActual = casillas[indiceTablero];
     const tieneFicha    = casillaActual.querySelector('.ficha');
     const nombreColor   = colorearNombre(estado.miJugador.nombre, estado.miJugador.color);
@@ -354,6 +373,13 @@ function actualizarManoTrasJugadaConAccion(mensajeHistorial, accion) {
     const idxJugado = estado.cartaSeleccionadaIdx;
     estado.spliceManoPropia(idxJugado, 1);
     estado.setCartaSeleccionadaIdx(null);
+
+    // FIX BUG "Carta Fantasma": Actualizamos la pantalla INMEDIATAMENTE
+    // para que la carta desaparezca visualmente antes de que empiece el lag
+    // de Firebase. Sin esto, la carta sigue visible pero ya no existe en el
+    // estado, causando el popup de "selecciona una carta" y la desaparición
+    // mágica al volver a tocarla.
+    renderizarMano();
 
     let cartaRobadaDeMazo = null;
 
@@ -491,7 +517,7 @@ export function intentarDescartarCartaMuerta() {
     const cartaEnMano = estado.manoPropia[estado.cartaSeleccionadaIdx];
     if (cartaEnMano.startsWith("J")) return mostrarToast("Los Jacks son comodines, nunca pueden ser cartas muertas.", "info");
 
-    const casillas = document.querySelectorAll('.casilla');
+    const casillas = getCasillas();
     let totalPosiciones    = 0;
     let posicionesOcupadas = 0;
 
@@ -517,7 +543,7 @@ window.intentarDescartarCartaMuerta = intentarDescartarCartaMuerta;
 // DETECCIÓN DE SEQUENCES
 // ============================================
 function verificarSequence(colorJugador) {
-    const casillas = document.querySelectorAll('.casilla');
+    const casillas = getCasillas();
 
     const esDelJugador = (indice) => {
         const c = casillas[indice];
@@ -563,7 +589,7 @@ function verificarSequence(colorJugador) {
 }
 
 function marcarSequence(indices, colorJugador) {
-    const casillas = document.querySelectorAll('.casilla');
+    const casillas = getCasillas();
 
     const claveCombo = [...indices].sort((a, b) => a - b).join(',');
     if (combosYaMarcados.has(claveCombo)) return;
@@ -607,7 +633,7 @@ export function iniciarListenerTablero() {
 
     // Listener: tablero
     tableroRef.on('value', (snapshot) => {
-        const casillas = document.querySelectorAll('.casilla');
+        const casillas = getCasillas();
         if (casillas.length < TAMANO_TABLERO * TAMANO_TABLERO) return;
 
         const rawVal = snapshot.val();
@@ -751,6 +777,9 @@ export function iniciarListenerTablero() {
 export function reiniciarEstadoJuegoLocal() {
     secuenciasLogradas = { rojo: 0, azul: 0, verde: 0 };
     combosYaMarcados.clear();
+
+    // Invalidar el caché de casillas para que se reconstruya con el nuevo tablero
+    invalidarCacheCasillas();
 
     limpiarEfectosAnteriores();
     if (timerOverlayJack) {

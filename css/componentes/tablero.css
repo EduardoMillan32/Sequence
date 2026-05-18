@@ -95,14 +95,51 @@
 
 /* ============================================
    SEQUENCES PROTEGIDOS
+   Optimización: animamos 'opacity' en un pseudo-elemento ::after en lugar de
+   animar 'box-shadow' directamente sobre la casilla. Animar opacity es una
+   operación 100% en GPU (compositor thread) y no fuerza recálculo de layout,
+   lo que elimina el lag cuando hay muchas casillas protegidas simultáneas.
+   El efecto visual de brillo se mantiene idéntico.
    ============================================ */
-.casilla.protegida-rojo  { border: 3px solid #e74c3c !important; animation: brillar-rojo  1.5s infinite alternate; }
-.casilla.protegida-azul  { border: 3px solid #3498db !important; animation: brillar-azul  1.5s infinite alternate; }
-.casilla.protegida-verde { border: 3px solid #2ecc71 !important; animation: brillar-verde 1.5s infinite alternate; }
+.casilla.protegida-rojo  {
+    border: 3px solid #e74c3c !important;
+    box-shadow: inset 0 0 8px rgba(231, 76, 60, 0.6), 0 0 6px rgba(231, 76, 60, 0.5);
+    will-change: auto;
+}
+.casilla.protegida-azul  {
+    border: 3px solid #3498db !important;
+    box-shadow: inset 0 0 8px rgba(52, 152, 219, 0.6), 0 0 6px rgba(52, 152, 219, 0.5);
+    will-change: auto;
+}
+.casilla.protegida-verde {
+    border: 3px solid #2ecc71 !important;
+    box-shadow: inset 0 0 8px rgba(46, 204, 113, 0.6), 0 0 6px rgba(46, 204, 113, 0.5);
+    will-change: auto;
+}
 
-@keyframes brillar-rojo  { from { box-shadow: inset 0 0 5px #e74c3c, 0 0 5px #e74c3c; } to { box-shadow: inset 0 0 15px #e74c3c, 0 0 15px #e74c3c; } }
-@keyframes brillar-azul  { from { box-shadow: inset 0 0 5px #3498db, 0 0 5px #3498db; } to { box-shadow: inset 0 0 15px #3498db, 0 0 15px #3498db; } }
-@keyframes brillar-verde { from { box-shadow: inset 0 0 5px #2ecc71, 0 0 5px #2ecc71; } to { box-shadow: inset 0 0 15px #2ecc71, 0 0 15px #2ecc71; } }
+/* Capa de brillo animada: solo anima opacity (operación de compositor, sin layout) */
+.casilla.protegida-rojo::after,
+.casilla.protegida-azul::after,
+.casilla.protegida-verde::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 5;
+    animation: brillo-protegida 1.8s ease-in-out infinite alternate;
+    will-change: opacity;
+}
+
+.casilla.protegida-rojo::after  { background: radial-gradient(ellipse at center, rgba(231, 76, 60, 0.35) 0%, transparent 75%); }
+.casilla.protegida-azul::after  { background: radial-gradient(ellipse at center, rgba(52, 152, 219, 0.35) 0%, transparent 75%); }
+.casilla.protegida-verde::after { background: radial-gradient(ellipse at center, rgba(46, 204, 113, 0.35) 0%, transparent 75%); }
+
+/* Una sola animación compartida para todos los colores — el navegador la reutiliza */
+@keyframes brillo-protegida {
+    from { opacity: 0.3; }
+    to   { opacity: 1;   }
+}
 
 /* ============================================
    ÚLTIMA FICHA COLOCADA
