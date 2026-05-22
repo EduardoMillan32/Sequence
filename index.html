@@ -9,6 +9,9 @@
     <link rel="stylesheet" href="css/pantallas/lobby.css">
     <link rel="stylesheet" href="css/componentes/tablero.css">
     <link rel="stylesheet" href="css/componentes/jugador.css">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
 
@@ -28,8 +31,7 @@
             <input type="text" id="input-nombre" placeholder="Tu nombre (Ej. Carlos)" autocomplete="off"
                    onkeydown="if(event.key==='Enter') document.getElementById('input-sala').focus()">
             <input type="text" id="input-sala" placeholder="Código de sala (Ej. casa)" autocomplete="off"
-                   onkeydown="if(event.key==='Enter') entrarLobby()"
-                   style="margin-top: 10px;">
+                   onkeydown="if(event.key==='Enter') entrarLobby()">
             <button id="btn-entrar" onclick="entrarLobby()">Entrar a la Sala</button>
         </div>
     </div>
@@ -84,8 +86,12 @@
 
                     <!-- Derecha: iconos de historial y reglas -->
                     <div class="barra-derecha">
-                        <span class="icono-accion icono-historial" title="Ver Historial" onclick="abrirHistorial()">📜</span>
-                        <span class="icono-accion icono-reglas"    title="Ver Reglas"    onclick="abrirReglas()">ℹ️</span>
+                        <span class="icono-accion icono-historial" title="Ver Historial" onclick="abrirHistorial()">
+                            <i data-lucide="scroll-text"></i>
+                        </span>
+                        <span class="icono-accion icono-reglas" title="Ver Reglas" onclick="abrirReglas()">
+                            <i data-lucide="info"></i>
+                        </span>
                     </div>
 
                 </div>
@@ -107,7 +113,7 @@
     <div id="modal-reglas" class="oculta-modal">
         <div class="contenido-modal">
             <span class="cerrar-modal" onclick="cerrarReglas()">&times;</span>
-            <h2 class="titulo-modal-reglas">📜 Reglas de Sequence</h2>
+            <h2 class="titulo-modal-reglas"><i data-lucide="scroll-text" style="width:22px;height:22px;vertical-align:middle;margin-right:6px;stroke:#f1c40f;"></i>Reglas de Sequence</h2>
             <ul class="lista-reglas">
                 <li><strong>Objetivo:</strong> Formar <span id="regla-victoria-dinamica" class="resaltado-verde">2</span> Sequence(s) de 5 fichas seguidas.</li>
                 <li><strong>Jacks de 2 Ojos:</strong> Comodines (cualquier casilla libre).</li>
@@ -123,7 +129,7 @@
     <div id="modal-historial" class="oculta-modal">
         <div class="contenido-modal">
             <span class="cerrar-modal" onclick="cerrarHistorial()">&times;</span>
-            <h2 class="titulo-modal-historial">📜 Historial de Jugadas</h2>
+            <h2 class="titulo-modal-historial"><i data-lucide="scroll-text" style="width:22px;height:22px;vertical-align:middle;margin-right:6px;stroke:#3498db;"></i>Historial de Jugadas</h2>
             <ul id="lista-historial" class="lista-historial-items"></ul>
         </div>
     </div>
@@ -134,6 +140,13 @@
 
     <!-- Módulo principal (carga todo el juego como ES6 modules) -->
     <script type="module" src="Js/principal.js"></script>
+
+    <!-- Inicializar iconos Lucide una vez que el DOM esté listo -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        });
+    </script>
 
 </body>
 </html>

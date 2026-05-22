@@ -158,26 +158,31 @@
 /* ============================================
    ÚLTIMA FICHA REMOVIDA
    ============================================ */
-.casilla.ultima-removida::after {
-    content: "✕";
+.casilla.ultima-removida {
+    border: 3px solid rgba(231, 76, 60, 0.8) !important;
+    animation: borde-removida 1.8s ease-in-out infinite;
+}
+
+/* Indicador DOM real de ficha removida (reemplaza el ::after con content) */
+.marca-removida {
     position: absolute;
     inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.4rem;
-    font-weight: bold;
-    color: rgba(231, 76, 60, 0.9);
-    background: rgba(231, 76, 60, 0.15);
     border-radius: 3px;
     z-index: 11;
-    animation: pulso-removida 1.8s ease-in-out infinite;
     pointer-events: none;
+    animation: pulso-removida 1.8s ease-in-out infinite;
+    background: rgba(231, 76, 60, 0.15);
 }
 
-.casilla.ultima-removida {
-    border: 3px solid rgba(231, 76, 60, 0.8) !important;
-    animation: borde-removida 1.8s ease-in-out infinite;
+.marca-removida svg {
+    width: 45%;
+    height: 45%;
+    stroke: rgba(231, 76, 60, 0.9);
+    stroke-width: 3;
+    stroke-linecap: round;
 }
 
 @keyframes pulso-removida {

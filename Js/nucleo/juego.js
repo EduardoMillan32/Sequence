@@ -5,6 +5,7 @@
 import { baseDatos, configuracionJuego, mostrarToast } from './config.js';
 import { mapaCartas, generarTablero, registrarManejadorCasilla } from './tablero.js';
 import { renderizarMano, ignorarSiguienteActualizacionMano, liberarBloqueosYRenderizar } from './jugador.js';
+import { sonidoFicha, sonidoJackAdd, sonidoJackRemove, sonidoSequence } from './sonidos.js';
 import * as estado from './estado.js';
 
 const TAMANO_TABLERO = 10;
@@ -137,6 +138,8 @@ function limpiarEfectosAnteriores() {
     }
     if (ultimaCasillaRemovidaEl) {
         ultimaCasillaRemovidaEl.classList.remove('ultima-removida');
+        const marcaVieja = ultimaCasillaRemovidaEl.querySelector('.marca-removida');
+        if (marcaVieja) marcaVieja.remove();
         ultimaCasillaRemovidaEl = null;
     }
 }
@@ -193,8 +196,11 @@ function quitarFichaVisual(indice) {
     const ficha    = casilla.querySelector('.ficha');
     if (!ficha) return;
 
+    // Limpiar marca anterior si existía en otra casilla
     if (ultimaCasillaRemovidaEl && ultimaCasillaRemovidaEl !== casilla) {
         ultimaCasillaRemovidaEl.classList.remove('ultima-removida');
+        const marcaAnterior = ultimaCasillaRemovidaEl.querySelector('.marca-removida');
+        if (marcaAnterior) marcaAnterior.remove();
     }
 
     ficha.style.transition = 'transform 0.2s ease-in, opacity 0.2s ease-in';
@@ -205,9 +211,16 @@ function quitarFichaVisual(indice) {
         casilla.classList.add('ultima-removida');
         ultimaCasillaRemovidaEl = casilla;
 
+        // Insertar elemento DOM real con icono SVG de X (reemplaza ::after con content)
+        const marca = document.createElement('div');
+        marca.classList.add('marca-removida');
+        marca.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+        casilla.appendChild(marca);
+
         if (timerUltimaRemovida) clearTimeout(timerUltimaRemovida);
         timerUltimaRemovida = setTimeout(() => {
             casilla.classList.remove('ultima-removida');
+            marca.remove();
             if (ultimaCasillaRemovidaEl === casilla) ultimaCasillaRemovidaEl = null;
             timerUltimaRemovida = null;
         }, 5000);
@@ -332,6 +345,7 @@ function intentarPonerFicha(indiceTablero, cartaTablero) {
         limpiarEfectosAnteriores();
         ultimaCasillaRemovidaEl = casillaActual;
 
+        sonidoJackRemove();
         mostrarOverlayJack('remove', cartaEnMano);
 
         actualizarManoTrasJugadaConAccion(
@@ -349,7 +363,10 @@ function intentarPonerFicha(indiceTablero, cartaTablero) {
     limpiarEfectosAnteriores();
 
     if (cartaEnMano.startsWith("J1")) {
+        sonidoJackAdd();
         mostrarOverlayJack('add', cartaEnMano);
+    } else {
+        sonidoFicha();
     }
 
     const cartaTraducida = traducirCartaAIcono(cartaTablero);
@@ -610,6 +627,7 @@ function marcarSequence(indices, colorJugador) {
     });
 
     secuenciasLogradas[colorJugador]++;
+    sonidoSequence();
 
     const nombreEquipo = colorearNombre(`Equipo ${colorJugador.toUpperCase()}`, colorJugador);
     registrarAccion(`🔥 ¡El ${nombreEquipo} logró un Sequence! (${secuenciasLogradas[colorJugador]}/${configuracionJuego.sequencesParaGanar})`);

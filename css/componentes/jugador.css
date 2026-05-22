@@ -109,15 +109,47 @@
 }
 
 /* ============================================
-   ICONOS DE ACCIÓN
+   ICONOS DE ACCIÓN (Lucide SVG)
    ============================================ */
 .icono-accion {
     cursor: pointer;
-    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease, transform 0.15s ease;
 }
 
-.icono-historial { text-shadow: 0 0 5px rgba(52, 152, 219, 0.8); }
-.icono-reglas    { text-shadow: 0 0 5px rgba(241, 196, 15, 0.8); }
+.icono-accion:hover {
+    transform: scale(1.12);
+}
+
+.icono-accion svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2;
+    pointer-events: none;
+}
+
+.icono-historial svg {
+    stroke: #3498db;
+    filter: drop-shadow(0 0 4px rgba(52, 152, 219, 0.7));
+}
+
+.icono-historial:hover {
+    background-color: rgba(52, 152, 219, 0.15);
+}
+
+.icono-reglas svg {
+    stroke: #f1c40f;
+    filter: drop-shadow(0 0 4px rgba(241, 196, 15, 0.7));
+}
+
+.icono-reglas:hover {
+    background-color: rgba(241, 196, 15, 0.15);
+}
 
 /* ============================================
    CONTENEDOR DE CARTAS
@@ -344,7 +376,25 @@
 }
 
 @media (max-height: 500px) and (orientation: landscape) {
-    .mano { padding: 5px 10px 8px 10px; }
-    .carta-mano { height: 55px; }
-    .mano h3 { font-size: 0.7rem; }
+    .mano {
+        padding: 4px 10px 6px 10px;
+        max-width: 100%;
+        border-radius: 10px 10px 0 0;
+    }
+    .carta-mano { height: 52px; }
+    .mano h3 { font-size: 0.65rem; }
+    .barra-superior-mano { margin-bottom: 4px; }
+    #contenedor-cartas { padding: 2px 2px 4px 2px; gap: 4px; }
+    .contador-mazo-badge { font-size: 0.75rem; padding: 2px 6px; }
+    .icono-accion { width: 26px; height: 26px; }
+    .icono-accion svg { width: 16px; height: 16px; }
+    #btn-descartar { font-size: 0.7rem; padding: 4px 8px; margin-top: 2px; }
+    .etiqueta-jack { font-size: 0.5rem; padding: 1px 3px; top: -8px; }
+    .btn-pasar { font-size: 0.7rem; padding: 3px 6px; }
+}
+
+/* Landscape en pantallas medianas (tablets horizontales) */
+@media (max-height: 700px) and (orientation: landscape) and (min-width: 600px) {
+    .mano { max-width: 800px; }
+    .carta-mano { height: 65px; }
 }

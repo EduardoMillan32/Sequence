@@ -33,11 +33,11 @@
 /* ============================================
    INPUT DE NOMBRE
    ============================================ */
-#input-nombre {
+#input-nombre,
+#input-sala {
     padding: 12px 15px;
     font-size: 1.1rem;
     width: 85%;
-    margin-bottom: 20px;
     border-radius: 8px;
     border: 2px solid transparent;
     background: #ecf0f1;
@@ -46,7 +46,17 @@
     outline: none;
 }
 
-#input-nombre:focus {
+#input-nombre {
+    margin-bottom: 12px;
+}
+
+#input-sala {
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+#input-nombre:focus,
+#input-sala:focus {
     border-color: #f1c40f;
 }
 
