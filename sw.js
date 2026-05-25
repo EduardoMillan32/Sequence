@@ -1,30 +1,34 @@
 // sw.js — Service Worker para Sequence PWA
 // Permite que la app se instale en pantalla de inicio y funcione como app nativa.
 // Estrategia: Network First para recursos dinámicos, Cache First para assets estáticos.
+//
+// NOTA DE RUTAS: Se usan rutas relativas (sin / inicial) para que el SW funcione
+// correctamente tanto en la raíz como en subcarpetas (ej. GitHub Pages /Sequence/).
+// El scope del SW es automáticamente la carpeta donde está sw.js.
 
-const CACHE_NAME = 'sequence-v1';
+const CACHE_NAME = 'sequence-v2';
 
 // Archivos que se cachean al instalar el SW (shell de la app)
 const ASSETS_ESTATICOS = [
-    '/',
-    '/index.html',
-    '/manifest.json',
-    '/css/base/general.css',
-    '/css/pantallas/lobby.css',
-    '/css/componentes/tablero.css',
-    '/css/componentes/jugador.css',
-    '/Js/principal.js',
-    '/Js/nucleo/config.js',
-    '/Js/nucleo/estado.js',
-    '/Js/nucleo/juego.js',
-    '/Js/nucleo/jugador.js',
-    '/Js/nucleo/pwa.js',
-    '/Js/nucleo/sesion.js',
-    '/Js/nucleo/sonidos.js',
-    '/Js/nucleo/tablero.js',
-    '/Js/pantallas/lobby.js',
-    '/icons/icon-192.png',
-    '/icons/icon-512.png'
+    './',
+    './index.html',
+    './manifest.json',
+    './css/base/general.css',
+    './css/pantallas/lobby.css',
+    './css/componentes/tablero.css',
+    './css/componentes/jugador.css',
+    './Js/principal.js',
+    './Js/nucleo/config.js',
+    './Js/nucleo/estado.js',
+    './Js/nucleo/juego.js',
+    './Js/nucleo/jugador.js',
+    './Js/nucleo/pwa.js',
+    './Js/nucleo/sesion.js',
+    './Js/nucleo/sonidos.js',
+    './Js/nucleo/tablero.js',
+    './Js/pantallas/lobby.js',
+    './icons/icon-192.png',
+    './icons/icon-512.png'
 ];
 
 // ============================================
@@ -72,6 +76,7 @@ self.addEventListener('fetch', (event) => {
         url.hostname.includes('firebase') ||
         url.hostname.includes('gstatic') ||
         url.hostname.includes('unpkg') ||
+        url.hostname.includes('deckofcardsapi') ||
         url.protocol === 'chrome-extension:'
     ) {
         return; // El navegador maneja estas peticiones normalmente
