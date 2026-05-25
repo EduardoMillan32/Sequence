@@ -21,5 +21,11 @@ import './nucleo/sesion.js';
 // 6. Lobby: sala de espera e inicio de partida (depende de todo lo anterior)
 import './pantallas/lobby.js';
 
+// 7. PWA: Wake Lock y detección de cierre de app
+import { inicializarPWA } from './nucleo/pwa.js';
+
 // Generar el tablero al cargar la página
 generarTablero();
+
+// Inicializar PWA (log de modo standalone, etc.)
+inicializarPWA();

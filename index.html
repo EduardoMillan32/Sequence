@@ -5,6 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Sequence: Multijugador</title>
 
+    <!-- ===== PWA: Manifest ===== -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- ===== PWA: Meta tags generales ===== -->
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="description" content="Juego de mesa Sequence multijugador en tiempo real">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <!-- ===== PWA: Meta tags para iOS (Safari) ===== -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Sequence">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+
     <link rel="stylesheet" href="css/base/general.css">
     <link rel="stylesheet" href="css/pantallas/lobby.css">
     <link rel="stylesheet" href="css/componentes/tablero.css">
@@ -146,6 +160,17 @@
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof lucide !== 'undefined') lucide.createIcons();
         });
+    </script>
+
+    <!-- ===== PWA: Registro del Service Worker ===== -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('[PWA] Service Worker registrado:', reg.scope))
+                    .catch(err => console.warn('[PWA] Error al registrar SW:', err));
+            });
+        }
     </script>
 
 </body>

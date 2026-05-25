@@ -6,6 +6,7 @@ import { baseDatos, configuracionJuego, inicializarReglas, mostrarToast } from '
 import { obtenerMazoBarajado, reiniciarEstadoJuegoLocal, iniciarListenerTablero, setTableroListenerActivo } from '../nucleo/juego.js';
 import { inicializarManoFirebase } from '../nucleo/jugador.js';
 import { inicializarSesion, iniciarListenerPresencia } from '../nucleo/sesion.js';
+import { activarWakeLock, liberarWakeLock } from '../nucleo/pwa.js';
 import * as estado from '../nucleo/estado.js';
 
 // ============================================
@@ -329,6 +330,8 @@ function iniciarListenerEstadoJuego() {
         // Partida abandonada
         if (estadoJuego && estadoJuego.abandonado) {
             if (!estado.juegoIniciadoVisualmente) return;
+            // Liberar Wake Lock al terminar la partida por abandono
+            liberarWakeLock();
             bloqueCartas.classList.add('oculta');
             bloqueVictoria.classList.remove('oculta');
             document.getElementById('texto-victoria-mano').innerText =
@@ -343,6 +346,8 @@ function iniciarListenerEstadoJuego() {
         // Empate técnico
         if (estadoJuego && estadoJuego.empate) {
             if (!estado.juegoIniciadoVisualmente) return;
+            // Liberar Wake Lock al terminar la partida por empate
+            liberarWakeLock();
             bloqueCartas.classList.add('oculta');
             bloqueVictoria.classList.remove('oculta');
             const textoWin = document.getElementById('texto-victoria-mano');
@@ -362,6 +367,9 @@ function iniciarListenerEstadoJuego() {
                 estado.setJuegoIniciadoVisualmente(false);
                 partidaIniciada = false;
 
+                // Liberar Wake Lock al volver al lobby
+                liberarWakeLock();
+
                 bloqueCartas.classList.remove('oculta');
                 bloqueVictoria.classList.add('oculta');
 
@@ -380,6 +388,8 @@ function iniciarListenerEstadoJuego() {
 
         // Victoria
         if (estadoJuego.victoria) {
+            // Liberar Wake Lock al terminar la partida por victoria
+            liberarWakeLock();
             bloqueCartas.classList.add('oculta');
             bloqueVictoria.classList.remove('oculta');
             const nombreGanador = nombresEquipos[estadoJuego.victoria] || estadoJuego.victoria;
@@ -404,6 +414,9 @@ function iniciarListenerEstadoJuego() {
 
             inicializarReglas(estadoJuego.jugadoresTotales, estadoJuego.equiposTotales);
             inicializarManoFirebase();
+
+            // Activar Wake Lock: evitar que la pantalla se bloquee durante el juego
+            activarWakeLock();
 
             setTimeout(() => {
                 pantallaLobby.classList.remove('activa');

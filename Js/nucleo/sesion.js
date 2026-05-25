@@ -12,6 +12,12 @@
 // NOTA DE RUTAS: Se usa el código de sala directamente como nodo raíz en Firebase
 // (ej. "casa/jugadores"), igual que el sistema original usaba "sala_activa/jugadores".
 // Esto garantiza compatibilidad con las reglas de seguridad de Firebase existentes.
+//
+// NOTA DE LIMPIEZA AL CERRAR:
+//   - El onDisconnect de Firebase es la red de seguridad principal.
+//   - pwa.js maneja la limpieza adicional al cerrar la app (pagehide + visibilitychange).
+//   - sesion.js NO registra beforeunload porque en móviles no es confiable y
+//     causaría conflicto con el sistema de pwa.js.
 
 import { baseDatos, mostrarToast } from './config.js';
 import * as estado from './estado.js';
@@ -67,20 +73,6 @@ function registrarPresencia(sala, jugadorId) {
 }
 
 // ============================================
-// LIMPIAR SESIÓN AL SALIR (beforeunload)
-// ============================================
-async function limpiarSesionAlSalir() {
-    const sala      = estado.idSala;
-    const jugadorId = estado.miJugadorId;
-    if (!sala || !jugadorId) return;
-
-    await Promise.all([
-        baseDatos.ref(`${sala}/jugadores/${jugadorId}`).remove(),
-        baseDatos.ref(`${sala}/presencia/${jugadorId}`).remove()
-    ]);
-}
-
-// ============================================
 // INICIALIZAR SESIÓN — punto de entrada principal
 // ============================================
 export async function inicializarSesion(nombreRaw, salaRaw) {
@@ -118,22 +110,12 @@ export async function inicializarSesion(nombreRaw, salaRaw) {
     //    durante reconexiones al cargar la página, bloqueando el lobby prematuramente.
     registrarPresencia(sala, ref.key);
 
-    // 6. Guardar sesión en localStorage para detectar recargas/cierres abruptos
+    // 6. Guardar sesión en localStorage para detectar recargas/cierres abruptos.
+    //    pwa.js usa esta clave para limpiar la sesión al cerrar la app (pagehide).
     guardarSesionActiva(sala, ref.key);
 
     return true;
 }
-
-// ============================================
-// LIMPIEZA AL CERRAR / RECARGAR LA PÁGINA
-// ============================================
-window.addEventListener('beforeunload', () => {
-    // Eliminamos la sesión de localStorage de forma síncrona (siempre funciona)
-    localStorage.removeItem(CLAVE_SESION);
-
-    // Intentamos limpiar Firebase de forma asíncrona (best-effort)
-    limpiarSesionAlSalir().catch(() => {});
-});
 
 // ============================================
 // LISTENER DE PRESENCIA — detecta desconexiones de otros jugadores.
