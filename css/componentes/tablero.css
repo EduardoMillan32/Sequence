@@ -100,19 +100,27 @@
    operación 100% en GPU (compositor thread) y no fuerza recálculo de layout,
    lo que elimina el lag cuando hay muchas casillas protegidas simultáneas.
    El efecto visual de brillo se mantiene idéntico.
+
+   Nota de diseño: Usamos 'outline' con 'outline-offset' negativo en lugar de 'border'
+   para marcar las casillas protegidas. El 'border' reduce el espacio interno disponible
+   para la ficha (haciendo que se encoja), mientras que 'outline' se dibuja por encima
+   sin alterar el tamaño de la casilla ni de la ficha.
    ============================================ */
 .casilla.protegida-rojo  {
-    border: 3px solid #e74c3c !important;
+    outline: 3px solid #e74c3c !important;
+    outline-offset: -3px;
     box-shadow: inset 0 0 8px rgba(231, 76, 60, 0.6), 0 0 6px rgba(231, 76, 60, 0.5);
     will-change: auto;
 }
 .casilla.protegida-azul  {
-    border: 3px solid #3498db !important;
+    outline: 3px solid #3498db !important;
+    outline-offset: -3px;
     box-shadow: inset 0 0 8px rgba(52, 152, 219, 0.6), 0 0 6px rgba(52, 152, 219, 0.5);
     will-change: auto;
 }
 .casilla.protegida-verde {
-    border: 3px solid #2ecc71 !important;
+    outline: 3px solid #2ecc71 !important;
+    outline-offset: -3px;
     box-shadow: inset 0 0 8px rgba(46, 204, 113, 0.6), 0 0 6px rgba(46, 204, 113, 0.5);
     will-change: auto;
 }
