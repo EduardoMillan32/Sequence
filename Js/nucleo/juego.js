@@ -113,8 +113,8 @@ function mostrarOverlayJack(tipo, codigoCarta) {
 
     if (timerOverlayJack) clearTimeout(timerOverlayJack);
 
-    const codigoAPI = "J" + codigoCarta.slice(2);
-    img.src = `https://deckofcardsapi.com/static/img/${codigoAPI}.png`;
+    // Las cartas locales se guardan con su nombre estándar (ej. J1C.png, J2H.png, etc.)
+    img.src = `./images/cartas/${codigoCarta}.png`;
     img.alt = codigoCarta;
 
     img.classList.remove('jack-carta-animada');
@@ -688,7 +688,9 @@ export function iniciarListenerTablero() {
     });
 
     // Listener: historial
-    baseDatos.ref(`${estado.rutaSala}/estado/historial`).on('child_added', (snapshot) => {
+    const historialRef = baseDatos.ref(`${estado.rutaSala}/estado/historial`);
+    historialRef.off('child_added'); // Asegurar que no haya listeners duplicados
+    historialRef.on('child_added', (snapshot) => {
         const msj = snapshot.val();
         const ul  = document.getElementById('lista-historial');
         if (!ul) return;
@@ -813,7 +815,17 @@ export function reiniciarEstadoJuegoLocal() {
     generarTablero();
 }
 
-// Setter para que lobby.js pueda resetear el flag del listener
-export function setTableroListenerActivo(val) {
-    tableroListenerActivo = val;
+export function detenerListenerTablero() {
+    if (!tableroListenerActivo) return;
+    tableroListenerActivo = false;
+
+    if (estado.rutaSala) {
+        baseDatos.ref(`${estado.rutaSala}/tablero`).off('value');
+        baseDatos.ref(`${estado.rutaSala}/estado/historial`).off('child_added');
+        baseDatos.ref(`${estado.rutaSala}/mazo`).off('value');
+        baseDatos.ref(`${estado.rutaSala}/estado/ordenTurnos`).off('value');
+        baseDatos.ref(`${estado.rutaSala}/estado/turnoActual`).off('value');
+        baseDatos.ref(`${estado.rutaSala}/estado/turnosPasados`).off('value');
+        baseDatos.ref(`${estado.rutaSala}/estado/ultimoJack`).off('value');
+    }
 }

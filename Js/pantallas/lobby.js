@@ -3,7 +3,7 @@
 // Usa la sala dinámica: estado.rutaSala = "{idSala}" (ej. "casa")
 
 import { baseDatos, configuracionJuego, inicializarReglas, mostrarToast } from '../nucleo/config.js';
-import { obtenerMazoBarajado, reiniciarEstadoJuegoLocal, iniciarListenerTablero, setTableroListenerActivo } from '../nucleo/juego.js';
+import { obtenerMazoBarajado, reiniciarEstadoJuegoLocal, iniciarListenerTablero, detenerListenerTablero } from '../nucleo/juego.js';
 import { inicializarManoFirebase } from '../nucleo/jugador.js';
 import { inicializarSesion, iniciarListenerPresencia } from '../nucleo/sesion.js';
 import { activarWakeLock, liberarWakeLock } from '../nucleo/pwa.js';
@@ -29,6 +29,19 @@ let yaLimpioSala    = false;
 let salaRef           = null;
 let estadoJuegoRef    = null;
 let nombresEquiposRef = null;
+
+// ============================================
+// DETENER LISTENERS DEL LOBBY (Evitar fugas de memoria)
+// ============================================
+import { detenerListenerPresencia } from '../nucleo/sesion.js';
+
+export function detenerListenersLobby() {
+    detenerListenerPresencia();
+
+    if (salaRef)           salaRef.off('value');
+    if (estadoJuegoRef)    estadoJuegoRef.off('value');
+    if (nombresEquiposRef) nombresEquiposRef.off('value');
+}
 
 // ============================================
 // ENTRADA AL LOBBY — llamada desde el botón de login
@@ -62,6 +75,9 @@ async function entrarLobby() {
     salaRef           = baseDatos.ref(`${estado.rutaSala}/jugadores`);
     estadoJuegoRef    = baseDatos.ref(`${estado.rutaSala}/estado`);
     nombresEquiposRef = baseDatos.ref(`${estado.rutaSala}/nombresEquipos`);
+
+    // Limpiar listeners previos por seguridad antes de registrar nuevos
+    detenerListenersLobby();
 
     // Iniciar listener de presencia (detecta desconexiones y migra host)
     iniciarListenerPresencia();
@@ -437,8 +453,7 @@ function volverAlLobby() {
 
     yaLimpioSala = false;
 
-    baseDatos.ref(`${estado.rutaSala}/tablero`).off('value');
-    setTableroListenerActivo(false);
+    detenerListenerTablero();
 
     estadoJuegoRef.set(null);
     baseDatos.ref(`${estado.rutaSala}/tablero`).set(null);
@@ -449,6 +464,33 @@ function volverAlLobby() {
         baseDatos.ref(`${estado.rutaSala}/jugadores/${j.id}/mano`).remove();
     });
 }
+
+// ============================================
+// SALIR DE LA SALA / VOLVER AL LOGIN (Limpieza completa)
+// ============================================
+export function abandonarSalaYVolverAlLogin() {
+    detenerListenersLobby();
+    detenerListenerTablero();
+
+    // Limpiar localStorage
+    localStorage.removeItem('sequence_sesion_activa');
+
+    // Resetear estado visual
+    pantallaLobby.classList.remove('activa');
+    pantallaLobby.classList.add('oculta');
+    pantallaJuego.classList.remove('activa');
+    pantallaJuego.classList.add('oculta');
+    pantallaLogin.classList.remove('oculta');
+    pantallaLogin.classList.add('activa');
+
+    // Habilitar botón de login de nuevo
+    const btnEntrar = document.getElementById('btn-entrar');
+    if (btnEntrar) {
+        btnEntrar.disabled  = false;
+        btnEntrar.innerText = "Entrar a la Sala";
+    }
+}
+window.abandonarSalaYVolverAlLogin = abandonarSalaYVolverAlLogin;
 
 // Exponer en window para el onclick del HTML
 window.volverAlLobby = volverAlLobby;

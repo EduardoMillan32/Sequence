@@ -6,6 +6,7 @@
 body {
     background-color: #1a1a1a;
     color: white;
+    color-scheme: dark; /* Indica al navegador que la página es nativamente oscura */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     display: flex;
     flex-direction: column;

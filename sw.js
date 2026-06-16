@@ -6,7 +6,24 @@
 // correctamente tanto en la raíz como en subcarpetas (ej. GitHub Pages /Sequence/).
 // El scope del SW es automáticamente la carpeta donde está sw.js.
 
-const CACHE_NAME = 'sequence-v2';
+const CACHE_NAME = 'sequence-v3'; // Incrementamos la versión para forzar la actualización de caché
+
+// Generar dinámicamente las rutas de las 52 cartas estándar + 4 Jacks especiales
+const palos = ['S', 'H', 'D', 'C'];
+const valores = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'Q', 'K'];
+const cartasEstaticas = [];
+
+palos.forEach(palo => {
+    valores.forEach(valor => {
+        cartasEstaticas.push(`./images/cartas/${valor}${palo}.png`);
+    });
+});
+
+// Jacks especiales de Sequence (J1 = 2 ojos, J2 = 1 ojo)
+const jacks = ['J1D', 'J1C', 'J2H', 'J2S'];
+jacks.forEach(jack => {
+    cartasEstaticas.push(`./images/cartas/${jack}.png`);
+});
 
 // Archivos que se cachean al instalar el SW (shell de la app)
 const ASSETS_ESTATICOS = [
@@ -28,7 +45,8 @@ const ASSETS_ESTATICOS = [
     './Js/nucleo/tablero.js',
     './Js/pantallas/lobby.js',
     './icons/icon-192.png',
-    './icons/icon-512.png'
+    './icons/icon-512.png',
+    ...cartasEstaticas
 ];
 
 // ============================================

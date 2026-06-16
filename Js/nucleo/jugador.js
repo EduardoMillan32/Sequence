@@ -10,13 +10,9 @@ function getContenedorMano() {
     return document.getElementById('contenedor-cartas');
 }
 
-function cartaManoACodigoAPI(carta) {
-    if (carta.startsWith("10")) {
-        return "0" + carta.slice(2);
-    }
-    if (carta.startsWith("J")) {
-        return "J" + carta.slice(2);
-    }
+function cartaManoACodigoLocal(carta) {
+    // Las cartas locales se guardan con su nombre estándar (ej. 10S.png, J1C.png, etc.)
+    // No necesitamos transformar "10" a "0" ni los Jacks porque localmente podemos usar el nombre real de la carta.
     return carta;
 }
 
@@ -93,7 +89,7 @@ export function renderizarMano() {
         contenedorCarta.classList.add('contenedor-carta-individual');
 
         const imgCarta = document.createElement('img');
-        imgCarta.src       = `https://deckofcardsapi.com/static/img/${cartaManoACodigoAPI(carta)}.png`;
+        imgCarta.src       = `./images/cartas/${cartaManoACodigoLocal(carta)}.png`;
         imgCarta.alt       = carta;
         imgCarta.loading   = 'lazy';
         imgCarta.draggable = false;

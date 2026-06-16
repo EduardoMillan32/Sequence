@@ -27,8 +27,8 @@ let wakeLockSentinel  = null;   // Referencia al Wake Lock activo
 let wakeLockActivo    = false;  // Flag para saber si debemos mantenerlo activo
 let timerSegundoPlano = null;   // Timer para detectar app en segundo plano
 
-// Tiempo en segundo plano antes de considerar "cierre" (30 segundos)
-const TIEMPO_SEGUNDO_PLANO_MS = 30_000;
+// Tiempo en segundo plano antes de considerar "cierre" (1 minuto / 60 segundos)
+const TIEMPO_SEGUNDO_PLANO_MS = 60_000;
 
 // ============================================
 // WAKE LOCK — Solicitar (evitar bloqueo de pantalla)

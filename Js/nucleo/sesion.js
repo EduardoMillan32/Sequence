@@ -122,9 +122,19 @@ export async function inicializarSesion(nombreRaw, salaRaw) {
 // Gestiona migración de host y limpieza de estados pendientes.
 // Solo el primer jugador activo y presente ejecuta la limpieza.
 // ============================================
+export function detenerListenerPresencia() {
+    const sala = estado.idSala;
+    if (sala) {
+        baseDatos.ref(`${sala}/presencia`).off('value');
+    }
+}
+
 export function iniciarListenerPresencia() {
     const sala = estado.idSala;
     if (!sala) return;
+
+    // Limpiar listener previo por seguridad
+    baseDatos.ref(`${sala}/presencia`).off('value');
 
     baseDatos.ref(`${sala}/presencia`).on('value', async (snapPresencia) => {
         const presentes = snapPresencia.val() || {};

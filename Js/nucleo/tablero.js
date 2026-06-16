@@ -23,10 +23,9 @@ export function registrarManejadorCasilla(fn) {
     _manejadorCasilla = fn;
 }
 
-function cartaACodigoAPI(carta) {
-    if (carta.startsWith("10")) {
-        return "0" + carta.slice(2);
-    }
+function cartaACodigoLocal(carta) {
+    // Las cartas locales se guardan con su nombre estándar (ej. 10S.png, AS.png, etc.)
+    // No necesitamos transformar "10" a "0" porque localmente podemos usar el nombre real de la carta.
     return carta;
 }
 
@@ -48,7 +47,7 @@ export function generarTablero() {
             casilla.innerHTML = "⭐";
         } else {
             const img = document.createElement('img');
-            img.src       = `https://deckofcardsapi.com/static/img/${cartaACodigoAPI(carta)}.png`;
+            img.src       = `./images/cartas/${cartaACodigoLocal(carta)}.png`;
             img.alt       = carta;
             img.loading   = 'lazy';
             img.draggable = false;
