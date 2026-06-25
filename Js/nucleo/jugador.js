@@ -91,7 +91,6 @@ export function renderizarMano() {
         const imgCarta = document.createElement('img');
         imgCarta.src       = `./images/cartas/${cartaManoACodigoLocal(carta)}.png`;
         imgCarta.alt       = carta;
-        imgCarta.loading   = 'lazy';
         imgCarta.draggable = false;
         imgCarta.classList.add('carta-mano');
 
@@ -122,8 +121,21 @@ export function renderizarMano() {
 // SELECCIONAR / DESELECCIONAR CARTA
 // ============================================
 function seleccionarCarta(index) {
-    estado.setCartaSeleccionadaIdx(estado.cartaSeleccionadaIdx === index ? null : index);
-    renderizarMano();
+    const nuevoSeleccionado = estado.cartaSeleccionadaIdx === index ? null : index;
+    estado.setCartaSeleccionadaIdx(nuevoSeleccionado);
+    
+    // Actualizar DOM sin recrear todo para evitar parpadeos
+    const contenedorMano = getContenedorMano();
+    if (!contenedorMano) return;
+    
+    const cartas = contenedorMano.querySelectorAll('.carta-mano');
+    cartas.forEach((carta, i) => {
+        if (i === nuevoSeleccionado) {
+            carta.classList.add('carta-seleccionada');
+        } else {
+            carta.classList.remove('carta-seleccionada');
+        }
+    });
 }
 
 // ============================================
