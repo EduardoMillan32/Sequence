@@ -180,7 +180,7 @@
    ============================================ */
 .carta-mano {
     height: 70px;
-    width: auto;
+    width: 50px;
     aspect-ratio: 5 / 7;
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s;
@@ -358,19 +358,19 @@
 @media (min-width: 768px) {
     .mano { width: 95%; padding: 12px 20px 15px 20px; }
     #contenedor-cartas { justify-content: center; gap: 10px; }
-    .carta-mano { height: 90px; }
+    .carta-mano { height: 90px; width: 64px; }
     .mano h3 { font-size: 1rem; }
     .etiqueta-jack { font-size: 0.7rem; padding: 3px 6px; }
     #btn-descartar { font-size: 0.9rem; padding: 8px 18px; }
 }
 
 @media (min-width: 1200px) {
-    .carta-mano { height: 100px; }
+    .carta-mano { height: 100px; width: 71px; }
     .mano { max-width: 750px; }
 }
 
 @media (max-width: 360px) {
-    .carta-mano { height: 60px; }
+    .carta-mano { height: 60px; width: 43px; }
     .mano h3 { font-size: 0.75rem; }
     #btn-descartar { font-size: 0.75rem; padding: 5px 10px; }
     .etiqueta-jack { font-size: 0.5rem; padding: 1px 3px; }
@@ -382,7 +382,7 @@
         max-width: 100%;
         border-radius: 10px 10px 0 0;
     }
-    .carta-mano { height: 52px; }
+    .carta-mano { height: 52px; width: 37px; }
     .mano h3 { font-size: 0.65rem; }
     .barra-superior-mano { margin-bottom: 4px; }
     #contenedor-cartas { padding: 2px 2px 4px 2px; gap: 4px; }
@@ -397,5 +397,5 @@
 /* Landscape en pantallas medianas (tablets horizontales) */
 @media (max-height: 700px) and (orientation: landscape) and (min-width: 600px) {
     .mano { max-width: 800px; }
-    .carta-mano { height: 65px; }
+    .carta-mano { height: 65px; width: 46px; }
 }

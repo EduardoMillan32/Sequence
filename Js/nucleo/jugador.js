@@ -82,38 +82,71 @@ export function renderizarMano() {
     const mano         = estado.manoPropia;
     const seleccionado = estado.cartaSeleccionadaIdx;
 
-    contenedorMano.innerHTML = "";
+    // En lugar de contenedorMano.innerHTML = "", reutilizamos los elementos
+    const hijosActuales = Array.from(contenedorMano.children);
+    
+    // Si hay más elementos en el DOM que cartas en la mano, eliminamos los sobrantes
+    while (hijosActuales.length > mano.length) {
+        const ultimo = hijosActuales.pop();
+        contenedorMano.removeChild(ultimo);
+    }
 
     mano.forEach((carta, index) => {
-        const contenedorCarta = document.createElement('div');
-        contenedorCarta.classList.add('contenedor-carta-individual');
+        let contenedorCarta;
+        let imgCarta;
+        let etiqueta;
 
-        const imgCarta = document.createElement('img');
-        imgCarta.src       = `./images/cartas/${cartaManoACodigoLocal(carta)}.png`;
-        imgCarta.alt       = carta;
-        imgCarta.draggable = false;
-        imgCarta.classList.add('carta-mano');
+        if (index < hijosActuales.length) {
+            // Reutilizar elemento existente
+            contenedorCarta = hijosActuales[index];
+            imgCarta = contenedorCarta.querySelector('.carta-mano');
+            etiqueta = contenedorCarta.querySelector('.etiqueta-jack');
+            
+            // Limpiar etiqueta si existía y ya no es necesaria, o prepararla para actualizar
+            if (etiqueta) {
+                etiqueta.remove();
+            }
+        } else {
+            // Crear nuevo elemento
+            contenedorCarta = document.createElement('div');
+            contenedorCarta.classList.add('contenedor-carta-individual');
+
+            imgCarta = document.createElement('img');
+            imgCarta.draggable = false;
+            imgCarta.classList.add('carta-mano');
+            
+            contenedorCarta.appendChild(imgCarta);
+            contenedorMano.appendChild(contenedorCarta);
+        }
+
+        // Actualizar propiedades de la imagen
+        const srcEsperado = `./images/cartas/${cartaManoACodigoLocal(carta)}.png`;
+        // Solo actualizar el src si cambió, para evitar parpadeos
+        if (imgCarta.getAttribute('src') !== srcEsperado) {
+            imgCarta.src = srcEsperado;
+        }
+        imgCarta.alt = carta;
 
         if (index === seleccionado) {
             imgCarta.classList.add('carta-seleccionada');
+        } else {
+            imgCarta.classList.remove('carta-seleccionada');
         }
 
+        // Recrear etiqueta si es Jack
         if (carta.startsWith("J1")) {
-            const etiqueta = document.createElement('span');
-            etiqueta.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>2 OJOS`;
-            etiqueta.classList.add('etiqueta-jack', 'jack-add');
-            contenedorCarta.appendChild(etiqueta);
+            const nuevaEtiqueta = document.createElement('span');
+            nuevaEtiqueta.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>2 OJOS`;
+            nuevaEtiqueta.classList.add('etiqueta-jack', 'jack-add');
+            contenedorCarta.appendChild(nuevaEtiqueta);
         } else if (carta.startsWith("J2")) {
-            const etiqueta = document.createElement('span');
-            etiqueta.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>1 OJO`;
-            etiqueta.classList.add('etiqueta-jack', 'jack-remove');
-            contenedorCarta.appendChild(etiqueta);
+            const nuevaEtiqueta = document.createElement('span');
+            nuevaEtiqueta.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>1 OJO`;
+            nuevaEtiqueta.classList.add('etiqueta-jack', 'jack-remove');
+            contenedorCarta.appendChild(nuevaEtiqueta);
         }
 
         imgCarta.onclick = () => seleccionarCarta(index);
-
-        contenedorCarta.appendChild(imgCarta);
-        contenedorMano.appendChild(contenedorCarta);
     });
 }
 
