@@ -119,7 +119,7 @@
 }
 
 /* ============================================
-   BOTÓN LISTO
+   BOTÓN LISTO Y SALIR
    ============================================ */
 #btn-listo {
     background-color: #2ecc71;
@@ -129,6 +129,16 @@
 
 #btn-listo:hover {
     box-shadow: 0 4px 12px rgba(46, 204, 113, 0.4);
+}
+
+.btn-secundario {
+    background-color: #e74c3c;
+    margin-top: 10px;
+    width: 100%;
+}
+
+.btn-secundario:hover {
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
 }
 
 /* ============================================

@@ -468,6 +468,13 @@ function volverAlLobby() {
 // ============================================
 // SALIR DE LA SALA / VOLVER AL LOGIN (Limpieza completa)
 // ============================================
+window.salirDeLaSala = function() {
+    if (estado.miJugadorId && estado.rutaSala) {
+        baseDatos.ref(`${estado.rutaSala}/jugadores/${estado.miJugadorId}`).remove();
+    }
+    abandonarSalaYVolverAlLogin();
+};
+
 export function abandonarSalaYVolverAlLogin() {
     detenerListenersLobby();
     detenerListenerTablero();
