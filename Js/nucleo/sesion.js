@@ -160,6 +160,19 @@ export function iniciarListenerPresencia() {
             await baseDatos.ref(`${sala}/jugadores/${jugador.id}`).remove();
         }
 
+        // Si solo quedan bots en la sala, los eliminamos también
+        const jugadoresRestantes = estado.jugadoresEnSala.filter(j => j.id && presentes[j.id] && !j.esBot);
+        if (jugadoresRestantes.length === 0) {
+            const bots = estado.jugadoresEnSala.filter(j => j.esBot);
+            for (const bot of bots) {
+                await baseDatos.ref(`${sala}/jugadores/${bot.id}`).remove();
+                await baseDatos.ref(`${sala}/presencia/${bot.id}`).remove();
+            }
+            // Limpiamos la sala completa ya que no hay humanos
+            await baseDatos.ref(`${sala}`).remove();
+            return;
+        }
+
         // Consultamos el estado actual del juego
         const estadoSnap  = await baseDatos.ref(`${sala}/estado`).once('value');
         const estadoJuego = estadoSnap.val();

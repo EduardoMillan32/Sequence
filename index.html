@@ -69,6 +69,16 @@
             </div>
 
             <button id="btn-listo" onclick="alternarListo()" disabled>Estoy Listo</button>
+    
+            <div style="display: none; gap: 10px; margin-top: 10px;">
+                <select id="select-color-bot" style="flex: 1; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2);">
+                    <option value="rojo" style="color: black;">Bot Rojo</option>
+                    <option value="azul" style="color: black;">Bot Azul</option>
+                    <option value="verde" style="color: black;">Bot Verde</option>
+                </select>
+                <button id="btn-agregar-bot" class="btn-secundario" style="flex: 2; background-color: #9b59b6; margin-top: 0;" onclick="agregarBot()">Agregar Bot 🤖</button>
+            </div>
+
             <button id="btn-salir-sala" class="btn-secundario" onclick="salirDeLaSala()">Salir de la Sala</button>
             <p id="mensaje-validacion" class="alerta"></p>
         </div>

@@ -188,15 +188,23 @@ function iniciarListenerJugadores() {
             salaRef.child(estado.miJugadorId).set(estado.miJugador);
         }
 
-        // Si somos el único jugador, limpiar la sala (partida anterior)
+        // Si somos el único jugador (o solo quedamos nosotros y bots), limpiar la sala (partida anterior)
+        const humanosEnSala = estado.jugadoresEnSala.filter(j => !j.esBot);
         if (!yaLimpioSala && estado.miJugadorId &&
-            estado.jugadoresEnSala.length === 1 &&
-            estado.jugadoresEnSala[0].id === estado.miJugadorId) {
+            humanosEnSala.length === 1 &&
+            humanosEnSala[0].id === estado.miJugadorId) {
             yaLimpioSala = true;
             nombresEquiposRef.remove();
             estadoJuegoRef.set(null);
             baseDatos.ref(`${estado.rutaSala}/tablero`).set(null);
             baseDatos.ref(`${estado.rutaSala}/mazo`).remove();
+            
+            // Si hay bots de una sesión anterior, los eliminamos
+            const bots = estado.jugadoresEnSala.filter(j => j.esBot);
+            bots.forEach(bot => {
+                baseDatos.ref(`${estado.rutaSala}/jugadores/${bot.id}`).remove();
+                baseDatos.ref(`${estado.rutaSala}/presencia/${bot.id}`).remove();
+            });
         }
 
         // Si hay múltiples jugadores pero el estado tiene 'abandonado: true'
@@ -466,17 +474,65 @@ function volverAlLobby() {
 }
 
 // ============================================
+// AGREGAR BOT
+// ============================================
+window.agregarBot = function() {
+    if (!estado.rutaSala) return;
+
+    const selectColor = document.getElementById('select-color-bot');
+    const colorSeleccionado = selectColor ? selectColor.value : 'rojo';
+    const idBot = `bot_${Date.now()}`;
+
+    const nuevoBot = {
+        nombre: "🤖 Bot",
+        color: colorSeleccionado,
+        listo: true,
+        esBot: true
+    };
+
+    // Usamos update para escribir jugador y presencia al mismo tiempo (atómico)
+    // Esto evita la condición de carrera donde el listener de presencia detecta al bot
+    // antes de que tenga su presencia registrada y lo elimina.
+    const updates = {};
+    updates[`jugadores/${idBot}`] = nuevoBot;
+    updates[`presencia/${idBot}`] = true;
+
+    baseDatos.ref(estado.rutaSala).update(updates)
+        .then(() => mostrarToast(`Bot ${colorSeleccionado} agregado a la sala`, "info"))
+        .catch(err => console.error("Error agregando bot:", err));
+};
+
+// ============================================
 // SALIR DE LA SALA / VOLVER AL LOGIN (Limpieza completa)
 // ============================================
 window.salirDeLaSala = async function() {
     if (estado.miJugadorId && estado.rutaSala) {
-        // Eliminar jugador y su presencia para que los demás lo detecten al instante
-        await Promise.all([
-            baseDatos.ref(`${estado.rutaSala}/jugadores/${estado.miJugadorId}`).remove(),
-            baseDatos.ref(`${estado.rutaSala}/presencia/${estado.miJugadorId}`).remove()
-        ]);
+        const humanosEnSala = estado.jugadoresEnSala.filter(j => !j.esBot);
+        
+        // Guardamos las referencias antes de limpiar el estado local
+        const ruta = estado.rutaSala;
+        const miId = estado.miJugadorId;
+        
+        // 1. Limpiamos el estado local y quitamos listeners PRIMERO.
+        // Esto evita que el listener de Firebase detecte el borrado y vuelva a agregarnos.
+        abandonarSalaYVolverAlLogin();
+        
+        try {
+            // 2. Eliminamos los datos de Firebase
+            if (humanosEnSala.length <= 1) {
+                await baseDatos.ref(ruta).remove();
+            } else {
+                await Promise.all([
+                    baseDatos.ref(`${ruta}/jugadores/${miId}`).remove(),
+                    baseDatos.ref(`${ruta}/presencia/${miId}`).remove()
+                ]);
+            }
+        } catch (error) {
+            console.error("Error al salir de la sala:", error);
+        }
+    } else {
+        abandonarSalaYVolverAlLogin();
     }
-    abandonarSalaYVolverAlLogin();
 };
 
 export function abandonarSalaYVolverAlLogin() {
@@ -485,6 +541,16 @@ export function abandonarSalaYVolverAlLogin() {
 
     // Limpiar localStorage
     localStorage.removeItem('sequence_sesion_activa');
+
+    // Resetear estado local
+    estado.setIdSala(null);
+    estado.setMiJugadorId(null);
+    estado.setMiJugadorRef(null);
+    estado.setMiJugador({ nombre: "", color: null, listo: false });
+    estado.setJugadoresEnSala([]);
+    estado.setJuegoIniciadoVisualmente(false);
+    partidaIniciada = false;
+    yaLimpioSala = false;
 
     // Resetear estado visual
     pantallaLobby.classList.remove('activa');

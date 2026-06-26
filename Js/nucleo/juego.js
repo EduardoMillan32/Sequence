@@ -741,6 +741,11 @@ export function iniciarListenerTablero() {
             tituloMano.classList.remove('turno-rojo', 'turno-azul', 'turno-verde');
 
             document.getElementById('btn-pasar-turno').classList.add('oculta');
+            
+            // Si el jugador en turno es un bot y yo soy el host, llamo a la API del bot
+            if (jugadorTurno && jugadorTurno.esBot && estado.jugadoresEnSala[0].id === estado.miJugadorId) {
+                llamarApiBot(jugadorTurno.id);
+            }
         }
     });
 
@@ -813,6 +818,37 @@ export function reiniciarEstadoJuegoLocal() {
     if (listaHistorial) listaHistorial.innerHTML = "";
 
     generarTablero();
+}
+
+// ============================================
+// LLAMADA A LA API DEL BOT
+// ============================================
+function llamarApiBot(botId) {
+    // Evitar llamadas múltiples si ya se está procesando
+    if (window.botLlamado === botId) return;
+    window.botLlamado = botId;
+    
+    // Pequeño retraso para que parezca que el bot "piensa"
+    setTimeout(() => {
+        // URL de tu API en Vercel (o localhost para pruebas)
+        // Cambia esto por la URL real de tu API cuando la despliegues
+        const apiUrl = `http://localhost:3000/api/bot?sala=${estado.idSala}&botId=${botId}`;
+        
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                console.log("Respuesta del bot:", data);
+                window.botLlamado = null;
+            })
+            .catch(error => {
+                console.error("Error al llamar al bot:", error);
+                window.botLlamado = null;
+                // Si falla, pasamos el turno del bot para no trabar el juego
+                const indiceActual = listaOrdenTurnos.indexOf(botId);
+                const siguienteIndice = (indiceActual + 1) % listaOrdenTurnos.length;
+                baseDatos.ref(`${estado.rutaSala}/estado/turnoActual`).set(listaOrdenTurnos[siguienteIndice]);
+            });
+    }, 1500);
 }
 
 export function detenerListenerTablero() {
