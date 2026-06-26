@@ -468,9 +468,13 @@ function volverAlLobby() {
 // ============================================
 // SALIR DE LA SALA / VOLVER AL LOGIN (Limpieza completa)
 // ============================================
-window.salirDeLaSala = function() {
+window.salirDeLaSala = async function() {
     if (estado.miJugadorId && estado.rutaSala) {
-        baseDatos.ref(`${estado.rutaSala}/jugadores/${estado.miJugadorId}`).remove();
+        // Eliminar jugador y su presencia para que los demás lo detecten al instante
+        await Promise.all([
+            baseDatos.ref(`${estado.rutaSala}/jugadores/${estado.miJugadorId}`).remove(),
+            baseDatos.ref(`${estado.rutaSala}/presencia/${estado.miJugadorId}`).remove()
+        ]);
     }
     abandonarSalaYVolverAlLogin();
 };
