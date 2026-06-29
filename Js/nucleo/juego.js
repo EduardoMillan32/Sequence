@@ -830,9 +830,8 @@ function llamarApiBot(botId) {
     
     // Pequeño retraso para que parezca que el bot "piensa"
     setTimeout(() => {
-        // URL de tu API en Vercel (o localhost para pruebas)
-        // Cambia esto por la URL real de tu API cuando la despliegues
-        const apiUrl = `http://localhost:3000/api/bot?sala=${estado.idSala}&botId=${botId}`;
+        // URL de la API en Vercel
+        const apiUrl = `https://juegos-bots-api.vercel.app/api/bot?sala=${estado.idSala}&botId=${botId}`;
         
         fetch(apiUrl)
             .then(response => response.json())
