@@ -749,6 +749,22 @@ export function iniciarListenerTablero() {
         }
     });
 
+    // Listener: bot pensando
+    baseDatos.ref(`${estado.rutaSala}/estado/botPensando`).on('value', (snapshot) => {
+        const botPensando = snapshot.val();
+        const tituloMano = document.getElementById('titulo-mano');
+        
+        if (botPensando && !miTurno) {
+            const jugadorTurno = estado.jugadoresEnSala.find(j => j.id === turnoActualId);
+            if (jugadorTurno && jugadorTurno.esBot) {
+                tituloMano.innerText = `🤖 ${jugadorTurno.nombre} está pensando...`;
+            }
+        } else if (!botPensando && !miTurno) {
+            const jugadorTurno = estado.jugadoresEnSala.find(j => j.id === turnoActualId);
+            tituloMano.innerText = `Esperando a ${jugadorTurno ? jugadorTurno.nombre : "el oponente"}...`;
+        }
+    });
+
     // Listener: muerte súbita / empate técnico
     baseDatos.ref(`${estado.rutaSala}/estado/turnosPasados`).on('value', (snapshot) => {
         const pases = snapshot.val() || 0;
@@ -826,28 +842,48 @@ export function reiniciarEstadoJuegoLocal() {
 function llamarApiBot(botId) {
     // Evitar llamadas múltiples si ya se está procesando
     if (window.botLlamado === botId) return;
-    window.botLlamado = botId;
     
-    // Pequeño retraso para que parezca que el bot "piensa"
-    setTimeout(() => {
-        // URL de la API en Vercel
-        const apiUrl = `https://juegos-bots-api.vercel.app/api/bot?sala=${estado.idSala}&botId=${botId}`;
+    // Verificar si otro cliente ya está procesando el bot
+    baseDatos.ref(`${estado.rutaSala}/estado/botPensando`).once('value', (snapshot) => {
+        if (snapshot.val()) return; // Alguien más ya lo está procesando
         
-        fetch(apiUrl)
-            .then(response => response.json())
-            .then(data => {
-                console.log("Respuesta del bot:", data);
-                window.botLlamado = null;
-            })
-            .catch(error => {
-                console.error("Error al llamar al bot:", error);
-                window.botLlamado = null;
-                // Si falla, pasamos el turno del bot para no trabar el juego
-                const indiceActual = listaOrdenTurnos.indexOf(botId);
-                const siguienteIndice = (indiceActual + 1) % listaOrdenTurnos.length;
-                baseDatos.ref(`${estado.rutaSala}/estado/turnoActual`).set(listaOrdenTurnos[siguienteIndice]);
-            });
-    }, 1500);
+        window.botLlamado = botId;
+        
+        // Marcar en Firebase que el bot está pensando
+        baseDatos.ref(`${estado.rutaSala}/estado/botPensando`).set(true);
+        
+        // Pequeño retraso para que parezca que el bot "piensa"
+        setTimeout(() => {
+            // URL de la API en Vercel
+            const apiUrl = `https://juegos-bots-api.vercel.app/api/bot?sala=${estado.idSala}&botId=${botId}`;
+            
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Respuesta del bot:", data);
+                    window.botLlamado = null;
+                    // El bot limpia botPensando en la API
+                })
+                .catch(error => {
+                    console.error("Error al llamar al bot:", error);
+                    window.botLlamado = null;
+                    mostrarToast("El bot tuvo un error y pasó su turno", "warning");
+                    
+                    // Si falla, pasamos el turno del bot para no trabar el juego
+                    const indiceActual = listaOrdenTurnos.indexOf(botId);
+                    const siguienteIndice = (indiceActual + 1) % listaOrdenTurnos.length;
+                    
+                    const updates = {};
+                    updates[`${estado.rutaSala}/estado/turnoActual`] = listaOrdenTurnos[siguienteIndice];
+                    updates[`${estado.rutaSala}/estado/botPensando`] = null;
+                    
+                    baseDatos.ref().update(updates);
+                });
+        }, 1500);
+    });
 }
 
 export function detenerListenerTablero() {
@@ -860,6 +896,7 @@ export function detenerListenerTablero() {
         baseDatos.ref(`${estado.rutaSala}/mazo`).off('value');
         baseDatos.ref(`${estado.rutaSala}/estado/ordenTurnos`).off('value');
         baseDatos.ref(`${estado.rutaSala}/estado/turnoActual`).off('value');
+        baseDatos.ref(`${estado.rutaSala}/estado/botPensando`).off('value');
         baseDatos.ref(`${estado.rutaSala}/estado/turnosPasados`).off('value');
         baseDatos.ref(`${estado.rutaSala}/estado/ultimoJack`).off('value');
     }

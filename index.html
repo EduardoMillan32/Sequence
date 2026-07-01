@@ -70,14 +70,24 @@
 
             <button id="btn-listo" onclick="alternarListo()" disabled>Estoy Listo</button>
             
-            <!-- Oculto temporalmente para subir cambios a producción -->
-            <div style="display: none; gap: 10px; margin-top: 10px;">
-                <select id="select-color-bot" style="flex: 1; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2);">
-                    <option value="rojo" style="color: black;">Bot Rojo</option>
-                    <option value="azul" style="color: black;">Bot Azul</option>
-                    <option value="verde" style="color: black;">Bot Verde</option>
-                </select>
-                <button id="btn-agregar-bot" class="btn-secundario" style="flex: 2; background-color: #9b59b6; margin-top: 0;" onclick="agregarBot()">Agregar Bot 🤖</button>
+            <div class="panel-bot">
+                <h4 class="titulo-bot">Ajustes de CPU 🤖</h4>
+                
+                <div class="controles-bot">
+                    <select id="select-color-bot" class="select-moderno">
+                        <option value="rojo">🔴 Equipo Rojo</option>
+                        <option value="azul" selected>🔵 Equipo Azul</option>
+                        <option value="verde">🟢 Equipo Verde</option>
+                    </select>
+
+                    <select id="select-dificultad-bot" class="select-moderno">
+                        <option value="facil">🟢 Fácil</option>
+                        <option value="normal" selected>🟡 Normal</option>
+                        <option value="dificil">🔴 Difícil</option>
+                    </select>
+                </div>
+
+                <button id="btn-agregar-bot" onclick="agregarBot()">Agregar Bot a la Sala</button>
             </div>
 
             <button id="btn-salir-sala" class="btn-secundario" onclick="salirDeLaSala()">Salir de la Sala</button>

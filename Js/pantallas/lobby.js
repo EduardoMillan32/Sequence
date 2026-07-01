@@ -232,12 +232,50 @@ function actualizarVistaLobby() {
 
     estado.jugadoresEnSala.forEach(jugador => {
         const li = document.createElement('li');
+        li.style.display = 'flex';
+        li.style.justifyContent = 'space-between';
+        li.style.alignItems = 'center';
+
         let colorPublico = 'Pensando...';
         if (jugador.color === 'rojo')  colorPublico = '🔴 Rojo';
         if (jugador.color === 'azul')  colorPublico = '🔵 Azul';
         if (jugador.color === 'verde') colorPublico = '🟢 Verde';
 
-        li.innerText = `${jugador.nombre} — Equipo: ${colorPublico} — ${jugador.listo ? '✅ LISTO' : '⏳ Esperando'}`;
+        const infoDiv = document.createElement('div');
+        infoDiv.innerText = `${jugador.nombre} — Equipo: ${colorPublico} — ${jugador.listo ? '✅ LISTO' : '⏳ Esperando'}`;
+        li.appendChild(infoDiv);
+
+        if (jugador.esBot) {
+            const accionesDiv = document.createElement('div');
+            accionesDiv.className = 'acciones-bot';
+
+            // Botón cambiar color
+            const btnColor = document.createElement('button');
+            btnColor.className = 'btn-accion-bot';
+            btnColor.innerHTML = '🎨';
+            btnColor.title = 'Cambiar Color';
+            btnColor.onclick = () => window.ciclarColorBot(jugador.id, jugador.color);
+            
+            // Botón cambiar dificultad
+            const btnDif = document.createElement('button');
+            btnDif.className = 'btn-accion-bot';
+            btnDif.innerHTML = '⚙️';
+            btnDif.title = 'Cambiar Dificultad';
+            btnDif.onclick = () => window.ciclarDificultadBot(jugador.id, jugador.dificultad);
+
+            // Botón eliminar
+            const btnEliminar = document.createElement('button');
+            btnEliminar.className = 'btn-accion-bot eliminar';
+            btnEliminar.innerHTML = '❌';
+            btnEliminar.title = 'Eliminar Bot';
+            btnEliminar.onclick = () => window.eliminarBot(jugador.id);
+
+            accionesDiv.appendChild(btnColor);
+            accionesDiv.appendChild(btnDif);
+            accionesDiv.appendChild(btnEliminar);
+            li.appendChild(accionesDiv);
+        }
+
         lista.appendChild(li);
     });
 }
@@ -481,13 +519,23 @@ window.agregarBot = function() {
 
     const selectColor = document.getElementById('select-color-bot');
     const colorSeleccionado = selectColor ? selectColor.value : 'rojo';
+    
+    const selectDificultad = document.getElementById('select-dificultad-bot');
+    const dificultadSeleccionada = selectDificultad ? selectDificultad.value : 'facil';
+    
     const idBot = `bot_${Date.now()}`;
 
+    let nombreDificultad = "";
+    if (dificultadSeleccionada === 'facil') nombreDificultad = "Fácil";
+    if (dificultadSeleccionada === 'normal') nombreDificultad = "Normal";
+    if (dificultadSeleccionada === 'dificil') nombreDificultad = "Difícil";
+
     const nuevoBot = {
-        nombre: "🤖 Bot",
+        nombre: `🤖 CPU ${nombreDificultad}`,
         color: colorSeleccionado,
         listo: true,
-        esBot: true
+        esBot: true,
+        dificultad: dificultadSeleccionada
     };
 
     // Usamos update para escribir jugador y presencia al mismo tiempo (atómico)
@@ -498,8 +546,51 @@ window.agregarBot = function() {
     updates[`presencia/${idBot}`] = true;
 
     baseDatos.ref(estado.rutaSala).update(updates)
-        .then(() => mostrarToast(`Bot ${colorSeleccionado} agregado a la sala`, "info"))
+        .then(() => mostrarToast(`🤖 CPU añadida al equipo ${colorSeleccionado}`, "success"))
         .catch(err => console.error("Error agregando bot:", err));
+};
+
+// ============================================
+// EDITAR / ELIMINAR BOT
+// ============================================
+window.ciclarColorBot = function(idBot, colorActual) {
+    if (!estado.rutaSala) return;
+    const colores = ['rojo', 'azul', 'verde'];
+    let idx = colores.indexOf(colorActual);
+    let nuevoColor = colores[(idx + 1) % colores.length];
+    
+    baseDatos.ref(`${estado.rutaSala}/jugadores/${idBot}`).update({
+        color: nuevoColor
+    });
+};
+
+window.ciclarDificultadBot = function(idBot, dificultadActual) {
+    if (!estado.rutaSala) return;
+    const dificultades = ['facil', 'normal', 'dificil'];
+    let idx = dificultades.indexOf(dificultadActual);
+    let nuevaDificultad = dificultades[(idx + 1) % dificultades.length];
+    
+    let nombreDificultad = "";
+    if (nuevaDificultad === 'facil') nombreDificultad = "Fácil";
+    if (nuevaDificultad === 'normal') nombreDificultad = "Normal";
+    if (nuevaDificultad === 'dificil') nombreDificultad = "Difícil";
+
+    baseDatos.ref(`${estado.rutaSala}/jugadores/${idBot}`).update({
+        dificultad: nuevaDificultad,
+        nombre: `🤖 CPU ${nombreDificultad}`
+    });
+};
+
+window.eliminarBot = function(idBot) {
+    if (!estado.rutaSala) return;
+    
+    const updates = {};
+    updates[`jugadores/${idBot}`] = null;
+    updates[`presencia/${idBot}`] = null;
+
+    baseDatos.ref(estado.rutaSala).update(updates)
+        .then(() => mostrarToast("🤖 CPU eliminada", "info"))
+        .catch(err => console.error("Error eliminando bot:", err));
 };
 
 // ============================================

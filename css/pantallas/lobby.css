@@ -157,6 +157,108 @@
 }
 
 /* ============================================
+   PANEL DEL BOT (UI)
+   ============================================ */
+.panel-bot {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 15px;
+    margin: 20px 0 10px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.titulo-bot {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #bdc3c7;
+    text-align: left;
+    font-weight: 600;
+}
+
+.controles-bot {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+/* Hack para estilizar los <select> nativos */
+.select-moderno {
+    flex: 1;
+    appearance: none; /* Quita el diseño feo por defecto del navegador */
+    -webkit-appearance: none;
+    background-color: #2c3e50;
+    color: white;
+    border: 2px solid #34495e;
+    border-radius: 8px;
+    padding: 10px 30px 10px 12px; /* Espacio extra a la derecha para la flecha */
+    font-size: 0.9rem;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    
+    /* Flecha SVG inyectada en el CSS para que se vea igual en todos los celulares */
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px top 50%;
+    background-size: 10px auto;
+}
+
+.select-moderno:focus {
+    border-color: #9b59b6; /* Se pinta de morado al tocarlo */
+    box-shadow: 0 0 8px rgba(155, 89, 182, 0.4);
+}
+
+.select-moderno option {
+    background-color: #2c3e50;
+    color: white;
+}
+
+#btn-agregar-bot {
+    background-color: #9b59b6;
+    margin-top: 0;
+    width: 100%;
+}
+
+#btn-agregar-bot:hover {
+    box-shadow: 0 4px 12px rgba(155, 89, 182, 0.4);
+}
+
+/* ============================================
+   ACCIONES DE BOT EN LISTA
+   ============================================ */
+.acciones-bot {
+    display: flex;
+    gap: 6px;
+}
+
+.btn-accion-bot {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    padding: 4px 6px;
+    font-size: 1rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-accion-bot:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+.btn-accion-bot.eliminar:hover {
+    background: rgba(231, 76, 60, 0.8);
+    border-color: #e74c3c;
+}
+
+/* ============================================
    RESPONSIVE
    ============================================ */
 @media (max-width: 360px) {
@@ -166,5 +268,8 @@
     .btn-color {
         padding: 8px 16px;
         font-size: 0.9rem;
+    }
+    .controles-bot {
+        flex-direction: column;
     }
 }
