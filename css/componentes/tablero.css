@@ -253,7 +253,8 @@
 }
 
 @media (max-width: 700px) {
-    .tablero { width: 98vw; padding: 4px; gap: 1px; border-width: 3px; margin-bottom: 160px; margin-top: 0; }
+    .tablero { width: 98vw; padding: 2px; gap: 1px; border-width: 1.5px; margin-bottom: 160px; margin-top: 0; }
+    .casilla { aspect-ratio: 2.3 / 3.5; } /* Hace las cartas un poco más altas */
     .esquina { font-size: 1.2rem; }
-    .ficha { width: 60%; border-width: 1px; }
+    .ficha { width: 70%; border-width: 1px; }
 }

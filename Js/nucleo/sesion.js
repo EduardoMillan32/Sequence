@@ -129,6 +129,8 @@ export function detenerListenerPresencia() {
     }
 }
 
+let timersToleranciaDesconexion = {};
+
 export function iniciarListenerPresencia() {
     const sala = estado.idSala;
     if (!sala) return;
@@ -141,6 +143,16 @@ export function iniciarListenerPresencia() {
 
         // Solo actuamos si hay jugadores en sala
         if (estado.jugadoresEnSala.length === 0) return;
+
+        // 1. Si un jugador que estaba desconectado vuelve a aparecer como presente,
+        // cancelamos su temporizador de expulsión inmediatamente.
+        Object.keys(presentes).forEach(idJugador => {
+            if (timersToleranciaDesconexion[idJugador]) {
+                clearTimeout(timersToleranciaDesconexion[idJugador]);
+                delete timersToleranciaDesconexion[idJugador];
+                mostrarToast(`⚡ Un jugador se ha reconectado.`, "success", 3000);
+            }
+        });
 
         // Detectamos jugadores sin presencia activa
         const desconectados = estado.jugadoresEnSala.filter(
@@ -155,12 +167,19 @@ export function iniciarListenerPresencia() {
         );
         if (!primerPresente || primerPresente.id !== estado.miJugadorId) return;
 
-        // Limpiamos cada jugador desconectado
+        // --- ELIMINACIÓN DE BOTS (se queda igual) ---
         for (const jugador of desconectados) {
-            await baseDatos.ref(`${sala}/jugadores/${jugador.id}`).remove();
+            // Evitamos borrar jugadores humanos de inmediato si la partida está en curso
+            const estadoSnap = await baseDatos.ref(`${sala}/estado`).once('value');
+            const estadoJuego = estadoSnap.val();
+            const esPartidaActiva = estadoJuego && estadoJuego.iniciado;
+
+            if (!esPartidaActiva && !jugador.esBot) {
+                // Si no hay partida iniciada (están en el lobby), sí los borramos normalmente
+                await baseDatos.ref(`${sala}/jugadores/${jugador.id}`).remove();
+            }
         }
 
-        // Si solo quedan bots en la sala, los eliminamos también
         const jugadoresRestantes = estado.jugadoresEnSala.filter(j => j.id && presentes[j.id] && !j.esBot);
         if (jugadoresRestantes.length === 0) {
             const bots = estado.jugadoresEnSala.filter(j => j.esBot);
@@ -168,26 +187,42 @@ export function iniciarListenerPresencia() {
                 await baseDatos.ref(`${sala}/jugadores/${bot.id}`).remove();
                 await baseDatos.ref(`${sala}/presencia/${bot.id}`).remove();
             }
-            // Limpiamos la sala completa ya que no hay humanos
             await baseDatos.ref(`${sala}`).remove();
             return;
         }
 
-        // Consultamos el estado actual del juego
         const estadoSnap  = await baseDatos.ref(`${sala}/estado`).once('value');
         const estadoJuego = estadoSnap.val();
 
-        // ── PARTIDA EN CURSO: marcar abandono ──────────────────────────────
-        // Si hay una partida activa y alguien se desconectó, la marcamos como
-        // abandonada. El listener de lobby.js detectará esto y mostrará la
-        // pantalla de "Partida Terminada" a todos los jugadores restantes.
+        // ── PARTIDA EN CURSO: Aplicar tolerancia de 60 segundos antes de marcar abandono ──
         if (estadoJuego && estadoJuego.iniciado) {
-            const nombreAbandono = desconectados[0].nombre || "Un jugador";
-            await baseDatos.ref(`${sala}/estado`).update({
-                abandonado:     true,
-                nombreAbandono: nombreAbandono
-            });
-            return; // El listener de lobby.js se encarga del resto
+            const jugadorFaltante = desconectados[0];
+            // Si es un bot o no se encuentra el jugador, no aplicamos tolerancia
+            if (!jugadorFaltante || jugadorFaltante.esBot) return;
+
+            const nombreAbandono = jugadorFaltante.nombre || "Un jugador";  
+
+            // Si no hay un temporizador activo para este jugador, creamos uno
+            if (!timersToleranciaDesconexion[jugadorFaltante.id]) {
+                mostrarToast(`⚠️ ${nombreAbandono} perdió conexión. Esperando 60s para reconexión...`, "warning", 5000);
+
+                timersToleranciaDesconexion[jugadorFaltante.id] = setTimeout(async () => {
+                    // Pasados los 60 segundos, verificamos el estado de presencia real en Firebase
+                    const snapPresenciaActual = await baseDatos.ref(`${sala}/presencia/${jugadorFaltante.id}`).once('value');
+                    const sigueDesconectado = !snapPresenciaActual.val();
+
+                    if (sigueDesconectado) {
+                        // Confirmamos el abandono definitivo
+                        await baseDatos.ref(`${sala}/jugadores/${jugadorFaltante.id}`).remove();
+                        await baseDatos.ref(`${sala}/estado`).update({
+                            abandonado: true,
+                            nombreAbandono: nombreAbandono
+                        });
+                    }
+                    delete timersToleranciaDesconexion[jugadorFaltante.id];
+                }, 60000); // 60 segundos de gracia
+            }
+            return; 
         }
 
         // ── LOBBY (sin partida activa): migrar host si es necesario ────────

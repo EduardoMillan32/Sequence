@@ -387,6 +387,13 @@ registrarManejadorCasilla(intentarPonerFicha);
 // ESCRITURA ATÓMICA MULTI-PATH TRAS JUGADA
 // ============================================
 function actualizarManoTrasJugadaConAccion(mensajeHistorial, accion) {
+    // 1. Bloqueamos el turno local de inmediato para evitar clics repetidos
+    miTurno = false; 
+    
+    // 2. Activamos el contador de bloqueos para que el listener de Firebase
+    // no destruya nuestra mano local mientras se procesa la jugada en el servidor
+    ignorarSiguienteActualizacionMano();
+
     const idxJugado = estado.cartaSeleccionadaIdx;
     estado.spliceManoPropia(idxJugado, 1);
     estado.setCartaSeleccionadaIdx(null);
@@ -399,9 +406,6 @@ function actualizarManoTrasJugadaConAccion(mensajeHistorial, accion) {
     renderizarMano();
 
     let cartaRobadaDeMazo = null;
-
-    // Bloqueamos el listener de la mano para que no sobreescriba el estado local
-    ignorarSiguienteActualizacionMano();
 
     // Transacción atómica en el mazo para evitar condiciones de carrera
     baseDatos.ref(`${estado.rutaSala}/mazo`).transaction((mazoActual) => {
