@@ -66,10 +66,14 @@ function registrarPresencia(sala, jugadorId) {
     // Escribimos presencia activa
     presenciaRef.set(true);
 
-    // Testamento: Firebase elimina presencia y jugador automáticamente
-    // si se pierde la conexión de forma abrupta.
+    // Testamento: Firebase elimina presencia automáticamente si se pierde la conexión.
     presenciaRef.onDisconnect().remove();
-    jugadorRef.onDisconnect().remove();
+    
+    // IMPORTANTE: Ya NO usamos jugadorRef.onDisconnect().remove() aquí.
+    // Si lo hacemos, Firebase borra la mano del jugador inmediatamente al minimizar la app (PWA).
+    // La limpieza de jugadores desconectados ahora se maneja exclusivamente mediante
+    // la lógica de tolerancia de 60 segundos en iniciarListenerPresencia().
+    jugadorRef.onDisconnect().cancel(); // Cancelamos cualquier testamento previo por seguridad
 }
 
 // ============================================
