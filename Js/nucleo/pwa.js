@@ -116,17 +116,12 @@ window.addEventListener('pagehide', (event) => {
     // event.persisted = true → la página va al bfcache (no es cierre real)
     // event.persisted = false → cierre real de la app/pestaña
     
-    // En iOS (Safari/PWA), pagehide se dispara INCLUSO cuando la app solo se minimiza.
-    // Si limpiamos la sesión aquí, el usuario es expulsado inmediatamente al minimizar.
-    // Por lo tanto, en dispositivos móviles (especialmente iOS), confiamos en el 
-    // timer de 'visibilitychange' (segundo plano) y en el onDisconnect de Firebase
-    // en lugar de forzar la limpieza inmediata en pagehide.
+    // En móviles (PWA), pagehide se dispara INCLUSO cuando la app solo se minimiza.
+    // Si limpiamos la sesión aquí, el usuario pierde su mano al minimizar.
+    // Ahora confiamos 100% en el timer de 'visibilitychange' (segundo plano) 
+    // y en la tolerancia de 60s de Firebase (sesion.js) para manejar desconexiones.
     
-    const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    
-    if (!event.persisted && estado.idSala && estado.miJugadorId && !esIOS) {
-        limpiarSesionPWA();
-    }
+    // Ya no forzamos limpiarSesionPWA() aquí para evitar borrar la mano al minimizar.
 });
 
 // ============================================
