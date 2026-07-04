@@ -76,6 +76,31 @@ async function entrarLobby() {
     estadoJuegoRef    = baseDatos.ref(`${estado.rutaSala}/estado`);
     nombresEquiposRef = baseDatos.ref(`${estado.rutaSala}/nombresEquipos`);
 
+    // 🔴 NUEVO: BARRIDO DE FANTASMAS (Síncrono y directo) 🔴
+    const [snapJugadores, snapPresencia] = await Promise.all([
+        salaRef.once('value'),
+        baseDatos.ref(`${estado.rutaSala}/presencia`).once('value')
+    ]);
+    
+    const jugadoresBD = snapJugadores.val() || {};
+    const presenciaBD = snapPresencia.val() || {};
+    const updatesFantasma = {};
+    let limpioAlgo = false;
+
+    Object.keys(jugadoresBD).forEach(id => {
+        // Si existe en jugadores pero NO en presencia (y no somos nosotros mismos)
+        if (!presenciaBD[id] && id !== estado.miJugadorId) {
+            updatesFantasma[`jugadores/${id}`] = null;
+            limpioAlgo = true;
+        }
+    });
+
+    if (limpioAlgo) {
+        console.log("Limpiando jugadores colgados de sesiones anteriores...");
+        await baseDatos.ref(estado.rutaSala).update(updatesFantasma);
+    }
+    // 🔴 FIN NUEVO CÓDIGO 🔴
+
     // Limpiar listeners previos por seguridad antes de registrar nuevos
     detenerListenersLobby();
 

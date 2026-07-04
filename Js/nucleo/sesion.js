@@ -133,6 +133,36 @@ export function detenerListenerPresencia() {
     }
 }
 
+// ============================================
+// LIMPIEZA AL CERRAR PESTAÑA / RECARGAR
+// ============================================
+// Función auxiliar para obtener la URL base de Firebase
+function obtenerUrlFirebaseREST() {
+    try {
+        if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+            return firebase.database().ref().toString().replace(/\/$/, '');
+        }
+    } catch (e) {}
+    return "https://secuence-7d7af-default-rtdb.firebaseio.com";
+}
+
+// Atrapar recargas y cierres de pestaña
+window.addEventListener('beforeunload', () => {
+    const sala = estado.idSala;
+    const miId = estado.miJugadorId;
+
+    if (sala && miId) {
+        // Si NO estamos en una partida activa, forzamos el borrado inmediato.
+        // Si estamos jugando, confiamos en la presencia/Tolerancia de 60s.
+        if (!estado.juegoIniciadoVisualmente) {
+            const baseUrl = obtenerUrlFirebaseREST();
+            // fetch con keepalive: true se envía aunque la pestaña se cierre
+            fetch(`${baseUrl}/${sala}/jugadores/${miId}.json`, { method: 'DELETE', keepalive: true }).catch(()=>{});
+            fetch(`${baseUrl}/${sala}/presencia/${miId}.json`, { method: 'DELETE', keepalive: true }).catch(()=>{});
+        }
+    }
+});
+
 let timersToleranciaDesconexion = {};
 
 export function iniciarListenerPresencia() {
