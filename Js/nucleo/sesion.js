@@ -91,8 +91,32 @@ export async function inicializarSesion(nombreRaw, salaRaw) {
         return false;
     }
 
-    // 2. Limpiar sesión huérfana del mismo dispositivo
-    await limpiarSesionAnterior();
+    // FIX BUG 1: Verificar si el juego ya está iniciado antes de limpiar la sesión
+    const raw = localStorage.getItem(CLAVE_SESION);
+    let esReconexion = false;
+    let jugadorIdReconexion = null;
+
+    if (raw) {
+        try {
+            const sesionGuardada = JSON.parse(raw);
+            if (sesionGuardada.sala === sala) {
+                const estadoSnap = await baseDatos.ref(`${sala}/estado`).once('value');
+                const estadoJuego = estadoSnap.val();
+                
+                if (estadoJuego && estadoJuego.iniciado) {
+                    esReconexion = true;
+                    jugadorIdReconexion = sesionGuardada.jugadorId;
+                }
+            }
+        } catch (e) {
+            console.error("Error al leer sesión guardada:", e);
+        }
+    }
+
+    // 2. Limpiar sesión huérfana del mismo dispositivo (solo si no es reconexión)
+    if (!esReconexion) {
+        await limpiarSesionAnterior();
+    }
 
     // 3. Guardar sala en el estado compartido (todos los módulos la usarán)
     //    estado.rutaSala quedará igual a sala (ej. "casa")
@@ -101,10 +125,21 @@ export async function inicializarSesion(nombreRaw, salaRaw) {
 
     // 4. Crear/unir al jugador en Firebase bajo la sala dinámica
     const jugadoresRef = baseDatos.ref(`${sala}/jugadores`);
-    const ref          = jugadoresRef.push(estado.miJugador);
+    let ref;
+    let jugadorId;
+
+    if (esReconexion && jugadorIdReconexion) {
+        jugadorId = jugadorIdReconexion;
+        ref = baseDatos.ref(`${sala}/jugadores/${jugadorId}`);
+        // Actualizar el nombre por si cambió, pero mantener el resto (color, mano, etc.)
+        await ref.update({ nombre: nombre });
+    } else {
+        ref = jugadoresRef.push(estado.miJugador);
+        jugadorId = ref.key;
+    }
 
     estado.setMiJugadorRef(ref);
-    estado.setMiJugadorId(ref.key);
+    estado.setMiJugadorId(jugadorId);
 
     // 5. Registrar presencia + testamento onDisconnect para el jugador.
     //    El abandono durante una partida activa se detecta en iniciarListenerPresencia():
@@ -112,11 +147,11 @@ export async function inicializarSesion(nombreRaw, salaRaw) {
     //    { abandonado: true } en el estado y lobby.js muestra la pantalla de fin.
     //    NO usamos onDisconnect en el nodo 'estado' porque Firebase puede ejecutarlo
     //    durante reconexiones al cargar la página, bloqueando el lobby prematuramente.
-    registrarPresencia(sala, ref.key);
+    registrarPresencia(sala, jugadorId);
 
     // 6. Guardar sesión en localStorage para detectar recargas/cierres abruptos.
     //    pwa.js usa esta clave para limpiar la sesión al cerrar la app (pagehide).
-    guardarSesionActiva(sala, ref.key);
+    guardarSesionActiva(sala, jugadorId);
 
     return true;
 }
