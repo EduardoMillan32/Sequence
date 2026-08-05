@@ -198,14 +198,16 @@ export function bloquearBotonAtras() {
         // Volvemos a empujar el estado para "atrapar" el siguiente intento
         window.history.pushState({ atrapado: true }, null, window.location.href);
         
-        // Mostrar un aviso usando el sistema de Toasts
-        if (window.mostrarToast) {
-            window.mostrarToast("Usa los botones del juego para salir de la sala.", "warning", 3000);
-        } else {
-            // Fallback por si mostrarToast no está en window
-            import('./config.js').then(module => {
-                module.mostrarToast("Usa los botones del juego para salir de la sala.", "warning", 3000);
-            });
+        // Si estamos en el lobby o en el juego, mostramos el aviso
+        if (estado.idSala) {
+            if (window.mostrarToast) {
+                window.mostrarToast("Usa los botones del juego para salir de la sala.", "warning", 3000);
+            } else {
+                // Fallback por si mostrarToast no está en window
+                import('./config.js').then(module => {
+                    module.mostrarToast("Usa los botones del juego para salir de la sala.", "warning", 3000);
+                });
+            }
         }
     });
 }
