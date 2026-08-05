@@ -105,6 +105,24 @@ async function entrarLobby() {
             console.log("Limpiando jugadores colgados de sesiones anteriores...");
             await baseDatos.ref(estado.rutaSala).update(updatesFantasma);
         }
+    } else {
+        // Si el juego está iniciado, forzamos la vista del juego directamente
+        // para evitar que el usuario se quede atascado en el lobby
+        estado.setJuegoIniciadoVisualmente(true);
+        partidaIniciada = true;
+        
+        pantallaLogin.classList.remove('activa');
+        pantallaLogin.classList.add('oculta');
+        pantallaLobby.classList.remove('activa');
+        pantallaLobby.classList.add('oculta');
+        pantallaJuego.classList.remove('oculta');
+        pantallaJuego.classList.add('activa');
+        
+        reiniciarEstadoJuegoLocal();
+        iniciarListenerTablero();
+        inicializarReglas(estadoJuego.jugadoresTotales, estadoJuego.equiposTotales);
+        inicializarManoFirebase();
+        activarWakeLock();
     }
     // 🔴 FIN NUEVO CÓDIGO 🔴
 
