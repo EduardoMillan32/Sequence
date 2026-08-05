@@ -44,6 +44,42 @@ export function detenerListenersLobby() {
 }
 
 // ============================================
+// AUTO-RECONEXIÓN AL CARGAR LA PÁGINA
+// ============================================
+export async function intentarReconexion() {
+    const raw = localStorage.getItem('sequence_sesion_activa');
+    if (!raw) return;
+
+    try {
+        const { sala, jugadorId } = JSON.parse(raw);
+        if (!sala || !jugadorId) return;
+
+        // Verificar si el juego está iniciado en Firebase
+        const estadoSnap = await baseDatos.ref(`${sala}/estado`).once('value');
+        const estadoJuego = estadoSnap.val();
+
+        if (estadoJuego && estadoJuego.iniciado) {
+            // Si el juego está iniciado, intentamos reconectar silenciosamente
+            console.log("Partida activa detectada, intentando reconexión automática...");
+            
+            // Rellenar los inputs para que entrarLobby los use
+            const jugadorSnap = await baseDatos.ref(`${sala}/jugadores/${jugadorId}`).once('value');
+            const jugadorData = jugadorSnap.val();
+            
+            if (jugadorData && jugadorData.nombre) {
+                document.getElementById('input-nombre').value = jugadorData.nombre;
+                document.getElementById('input-sala').value = sala;
+                
+                // Llamar a entrarLobby automáticamente
+                await entrarLobby();
+            }
+        }
+    } catch (e) {
+        console.error("Error en auto-reconexión:", e);
+    }
+}
+
+// ============================================
 // ENTRADA AL LOBBY — llamada desde el botón de login
 // ============================================
 async function entrarLobby() {
