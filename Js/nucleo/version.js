@@ -3,7 +3,7 @@
 
 import { mostrarToast } from './config.js';
 
-const VERSION_APP = "1.1.1";
+const VERSION_APP = "1.1.2";
 let contadorToques = 0;
 let temporizadorToques = null;
 
