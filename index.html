@@ -10,7 +10,7 @@
 
     <!-- ===== PWA: Meta tags generales ===== -->
     <meta name="theme-color" content="#1a1a2e">
-    <meta name="color-scheme" content="only light">
+    <meta name="color-scheme" content="dark light">
     <meta name="description" content="Juego de mesa Sequence multijugador en tiempo real">
     <meta name="mobile-web-app-capable" content="yes">
 
@@ -40,7 +40,7 @@
 
     <!-- ===== PANTALLA: LOGIN ===== -->
     <div id="pantalla-login" class="pantalla activa">
-        <h1>Sequence 🃏</h1>
+        <h1 id="titulo-principal" style="user-select: none; cursor: pointer;">Sequence 🃏</h1>
         <div class="caja-formulario">
             <h3>Ingresa tus datos para jugar</h3>
             <input type="text" id="input-nombre" placeholder="Tu nombre (Ej. Carlos)" autocomplete="off"
@@ -168,6 +168,18 @@
             <span class="cerrar-modal" onclick="cerrarHistorial()">&times;</span>
             <h2 class="titulo-modal-historial"><i data-lucide="scroll-text" style="width:22px;height:22px;vertical-align:middle;margin-right:6px;stroke:#3498db;"></i>Historial de Jugadas</h2>
             <ul id="lista-historial" class="lista-historial-items"></ul>
+        </div>
+    </div>
+
+    <!-- ===== MODAL: CONFIRMAR SALIDA ===== -->
+    <div id="modal-confirmar-salida" class="oculta-modal">
+        <div class="contenido-modal" style="text-align: center;">
+            <h2 style="color: #e74c3c; margin-bottom: 15px; margin-top: 0;"><i data-lucide="alert-triangle" style="width:22px;height:22px;vertical-align:middle;margin-right:6px;stroke:#e74c3c;"></i>¿Abandonar partida?</h2>
+            <p style="margin-bottom: 20px; color: #ecf0f1; font-size: 1.05rem;">Si sales ahora, te desconectarás de la sala y la partida podría terminar para los demás.</p>
+            <div style="display: flex; justify-content: space-around; gap: 10px;">
+                <button onclick="cancelarSalida()" style="background-color: #7f8c8d; color: white; flex: 1;">Cancelar</button>
+                <button onclick="confirmarSalida()" style="background-color: #e74c3c; color: white; flex: 1;">Sí, salir</button>
+            </div>
         </div>
     </div>
 

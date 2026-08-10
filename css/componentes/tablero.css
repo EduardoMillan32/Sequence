@@ -164,6 +164,19 @@
 }
 
 /* ============================================
+   PREVENIR MODO OSCURO FORZADO (SAMSUNG/CHROME)
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+    .ficha.ultima-colocada {
+        border-color: #f1c40f;
+    }
+    
+    .casilla.protegida-rojo::after  { background: radial-gradient(ellipse at center, rgba(231, 76, 60, 0.35) 0%, transparent 75%); }
+    .casilla.protegida-azul::after  { background: radial-gradient(ellipse at center, rgba(52, 152, 219, 0.35) 0%, transparent 75%); }
+    .casilla.protegida-verde::after { background: radial-gradient(ellipse at center, rgba(46, 204, 113, 0.35) 0%, transparent 75%); }
+}
+
+/* ============================================
    ÚLTIMA FICHA REMOVIDA
    ============================================ */
 .casilla.ultima-removida {

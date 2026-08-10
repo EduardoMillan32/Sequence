@@ -24,8 +24,14 @@ import './pantallas/lobby.js';
 // 7. PWA: Wake Lock y detección de cierre de app
 import { inicializarPWA } from './nucleo/pwa.js';
 
+// 8. Easter Egg: Versión de la app
+import { inicializarEasterEggVersion } from './nucleo/version.js';
+
 // Generar el tablero al cargar la página
 generarTablero();
+
+// Inicializar Easter Egg de versión
+inicializarEasterEggVersion();
 
 // Inicializar PWA (log de modo standalone, etc.)
 inicializarPWA();

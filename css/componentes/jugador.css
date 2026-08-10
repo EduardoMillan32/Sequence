@@ -271,7 +271,8 @@
 .oculta-modal { display: none !important; }
 
 #modal-reglas,
-#modal-historial {
+#modal-historial,
+#modal-confirmar-salida {
     position: fixed;
     top: 0;
     left: 0;

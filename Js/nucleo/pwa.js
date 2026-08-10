@@ -187,6 +187,46 @@ export function esModoStandalone() {
 }
 
 // ============================================
+// INTERCEPTAR BOTÓN ATRÁS (History API)
+// ============================================
+function inicializarBloqueoAtras() {
+    // Inyectar un estado inicial en el historial
+    history.pushState({ page: 'sequence' }, '', window.location.href);
+
+    window.addEventListener('popstate', (event) => {
+        // Si el usuario está en una sala (lobby o juego)
+        if (estado.idSala && estado.miJugadorId) {
+            // Volver a inyectar el estado para que no salga de la página
+            history.pushState({ page: 'sequence' }, '', window.location.href);
+            
+            // Mostrar el modal de confirmación
+            const modal = document.getElementById('modal-confirmar-salida');
+            if (modal) {
+                modal.classList.remove('oculta-modal');
+                modal.style.display = 'flex';
+            }
+        }
+    });
+}
+
+// Funciones globales para el modal de confirmación
+window.cancelarSalida = function() {
+    const modal = document.getElementById('modal-confirmar-salida');
+    if (modal) {
+        modal.classList.add('oculta-modal');
+        modal.style.display = 'none';
+    }
+};
+
+window.confirmarSalida = function() {
+    window.cancelarSalida();
+    // Llamar a la función global que ya existe en lobby.js
+    if (typeof window.salirDeLaSala === 'function') {
+        window.salirDeLaSala();
+    }
+};
+
+// ============================================
 // INICIALIZAR PWA — llamar desde principal.js
 // ============================================
 export function inicializarPWA() {
@@ -195,4 +235,6 @@ export function inicializarPWA() {
     } else {
         console.info('[PWA] Ejecutándose en navegador normal 🌐');
     }
+    
+    inicializarBloqueoAtras();
 }
