@@ -190,8 +190,10 @@ export function esModoStandalone() {
 // INTERCEPTAR BOTÓN ATRÁS (History API)
 // ============================================
 function inicializarBloqueoAtras() {
-    // Inyectar un estado inicial en el historial
-    history.pushState({ page: 'sequence' }, '', window.location.href);
+    // NOTA: Ya no inyectamos el estado aquí al cargar la página.
+    // Los navegadores móviles (especialmente Samsung Internet) ignoran el pushState
+    // si ocurre antes de que el usuario interactúe con la página (medida anti-secuestro).
+    // El pushState ahora se hace en lobby.js justo cuando el usuario presiona "Entrar".
 
     window.addEventListener('popstate', (event) => {
         // Si el usuario está en una sala (lobby o juego)

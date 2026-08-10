@@ -121,6 +121,11 @@ async function entrarLobby() {
     // Mostrar el código de sala en el lobby
     const spanSala = document.getElementById('codigo-sala-display');
     if (spanSala) spanSala.innerText = estado.idSala;
+
+    // 🔴 NUEVO: Inyectar estado en el historial DESPUÉS de la interacción del usuario
+    // Esto permite que navegadores móviles (Samsung/Chrome) registren el estado
+    // y disparen el evento 'popstate' cuando el usuario presione "Atrás".
+    history.pushState({ page: 'sequence' }, '', window.location.href);
 }
 
 // Exponer en window para el onclick del HTML
