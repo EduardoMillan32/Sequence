@@ -409,7 +409,7 @@ function actualizarManoTrasJugadaConAccion(mensajeHistorial, accion) {
 
     // Transacción atómica en el mazo para evitar condiciones de carrera
     baseDatos.ref(`${estado.rutaSala}/mazo`).transaction((mazoActual) => {
-        if (mazoActual === null || mazoActual === undefined) return;
+        if (mazoActual === null || mazoActual === undefined) return null;
 
         const mazoNuevo = [...mazoActual];
 
@@ -493,7 +493,7 @@ function descartarYRobarSinPasarTurno(cartaDescartada) {
     let cartaRobadaDescartar = null;
 
     baseDatos.ref(`${estado.rutaSala}/mazo`).transaction((mazoActual) => {
-        if (mazoActual === null || mazoActual === undefined) return;
+        if (mazoActual === null || mazoActual === undefined) return null;
 
         const mazoNuevo = [...mazoActual];
 
