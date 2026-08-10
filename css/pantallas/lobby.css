@@ -4,7 +4,7 @@
    CAJAS DE FORMULARIO Y LOBBY
    ============================================ */
 .caja-formulario, .caja-lobby {
-    background: linear-gradient(145deg, #2c3e50, #34495e);
+    background-image: linear-gradient(145deg, #2c3e50, #34495e);
     padding: 30px;
     border-radius: 16px;
     border: 2px solid #f1c40f;
