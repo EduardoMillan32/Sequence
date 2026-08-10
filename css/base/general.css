@@ -4,11 +4,12 @@
 }
 
 :root {
-    color-scheme: only light; 
+    color-scheme: light dark; 
 }
 
 body {
     background-color: #1a1a1a;
+    overscroll-behavior-x: none; /* Previene el gesto de deslizar para atrás en móviles */
     color: white;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     display: flex;
