@@ -3,8 +3,8 @@
 
 import { mostrarToast } from './config.js';
 
-const VERSION_APP = "1.1.3";
-let contadorToques = 0;
+const VERSION_APP = "1.1.4";
+let contadorToques = 0
 let temporizadorToques = null;
 
 export function inicializarEasterEggVersion() {
