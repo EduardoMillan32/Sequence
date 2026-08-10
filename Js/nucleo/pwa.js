@@ -217,6 +217,11 @@ window.cancelarSalida = function() {
     if (modal) {
         modal.classList.add('oculta-modal');
         modal.style.display = 'none';
+        
+        // Volver a inyectar el estado para atrapar el siguiente intento de ir atrás
+        if (estado.idSala && estado.miJugadorId) {
+            history.pushState({ page: 'sequence' }, '', window.location.href);
+        }
     }
 };
 

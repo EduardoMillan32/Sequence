@@ -633,16 +633,43 @@ window.salirDeLaSala = async function() {
         // Guardamos las referencias antes de limpiar el estado local
         const ruta = estado.rutaSala;
         const miId = estado.miJugadorId;
-        
-        // 1. Limpiamos el estado local y quitamos listeners PRIMERO.
-        // Esto evita que el listener de Firebase detecte el borrado y vuelva a agregarnos.
-        abandonarSalaYVolverAlLogin();
+        const miNombre = estado.miJugador.nombre;
         
         try {
+            // Verificar si hay una partida activa antes de salir
+            const estadoSnap = await baseDatos.ref(`${ruta}/estado`).once('value');
+            const estadoJuego = estadoSnap.val();
+            
+            if (estadoJuego && estadoJuego.iniciado) {
+                // Si hay partida activa y somos más de 1 humano, marcamos abandono inmediato
+                if (humanosEnSala.length > 1) {
+                    const updates = {
+                        abandonado: true,
+                        nombreAbandono: miNombre
+                    };
+                    
+                    // Si somos el host, pasamos el host a otro humano
+                    if (estadoJuego.host === miId) {
+                        const otroHumano = humanosEnSala.find(j => j.id !== miId);
+                        if (otroHumano) {
+                            updates.host = otroHumano.id;
+                        }
+                    }
+                    
+                    await baseDatos.ref(`${ruta}/estado`).update(updates);
+                }
+            }
+
+            // 1. Limpiamos el estado local y quitamos listeners PRIMERO.
+            // Esto evita que el listener de Firebase detecte el borrado y vuelva a agregarnos.
+            abandonarSalaYVolverAlLogin();
+            
             // 2. Eliminamos los datos de Firebase
             if (humanosEnSala.length <= 1) {
+                // Si éramos el último humano, destruimos la sala completa
                 await baseDatos.ref(ruta).remove();
             } else {
+                // Si quedan humanos, solo nos borramos a nosotros
                 await Promise.all([
                     baseDatos.ref(`${ruta}/jugadores/${miId}`).remove(),
                     baseDatos.ref(`${ruta}/presencia/${miId}`).remove()
@@ -650,6 +677,7 @@ window.salirDeLaSala = async function() {
             }
         } catch (error) {
             console.error("Error al salir de la sala:", error);
+            abandonarSalaYVolverAlLogin();
         }
     } else {
         abandonarSalaYVolverAlLogin();
