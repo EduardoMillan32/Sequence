@@ -187,32 +187,6 @@ export function esModoStandalone() {
 }
 
 // ============================================
-// BLOQUEAR BOTÓN ATRÁS (Gestos en móviles)
-// ============================================
-export function bloquearBotonAtras() {
-    // Empujamos un estado inicial al historial de navegación
-    window.history.pushState({ atrapado: true }, null, window.location.href);
-
-    // Escuchamos el evento 'popstate' que se dispara al ir hacia atrás
-    window.addEventListener('popstate', (event) => {
-        // Volvemos a empujar el estado para "atrapar" el siguiente intento
-        window.history.pushState({ atrapado: true }, null, window.location.href);
-        
-        // Si estamos en el lobby o en el juego, mostramos el aviso
-        if (estado.idSala) {
-            if (window.mostrarToast) {
-                window.mostrarToast("Usa los botones del juego para salir de la sala.", "warning", 3000);
-            } else {
-                // Fallback por si mostrarToast no está en window
-                import('./config.js').then(module => {
-                    module.mostrarToast("Usa los botones del juego para salir de la sala.", "warning", 3000);
-                });
-            }
-        }
-    });
-}
-
-// ============================================
 // INICIALIZAR PWA — llamar desde principal.js
 // ============================================
 export function inicializarPWA() {
@@ -221,7 +195,4 @@ export function inicializarPWA() {
     } else {
         console.info('[PWA] Ejecutándose en navegador normal 🌐');
     }
-    
-    // Activar la trampa del botón atrás
-    bloquearBotonAtras();
 }

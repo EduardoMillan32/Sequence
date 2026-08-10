@@ -409,9 +409,7 @@ function actualizarManoTrasJugadaConAccion(mensajeHistorial, accion) {
 
     // Transacción atómica en el mazo para evitar condiciones de carrera
     baseDatos.ref(`${estado.rutaSala}/mazo`).transaction((mazoActual) => {
-        // FIX BUG 2: Si el mazo está vacío o no existe, devolvemos un array vacío
-        // para que la transacción se complete y podamos pasar el turno
-        if (mazoActual === null || mazoActual === undefined) return [];
+        if (mazoActual === null || mazoActual === undefined) return;
 
         const mazoNuevo = [...mazoActual];
 
@@ -432,8 +430,7 @@ function actualizarManoTrasJugadaConAccion(mensajeHistorial, accion) {
             liberarBloqueosYRenderizar();
             return;
         }
-        // Si no se hizo commit pero no hay error, es porque el mazo ya estaba vacío
-        // y devolvimos [] que es igual a lo que había. Continuamos con el turno.
+        if (!committed) return;
 
         if (cartaRobadaDeMazo) {
             estado.pushManoPropia(cartaRobadaDeMazo);

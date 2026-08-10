@@ -29,9 +29,3 @@ generarTablero();
 
 // Inicializar PWA (log de modo standalone, etc.)
 inicializarPWA();
-
-// 8. Auto-reconexión: Intentar reconectar si hay una sesión activa
-import { intentarReconexion } from './pantallas/lobby.js';
-document.addEventListener('DOMContentLoaded', () => {
-    intentarReconexion();
-});
