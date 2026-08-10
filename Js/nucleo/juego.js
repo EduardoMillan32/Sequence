@@ -167,7 +167,7 @@ function colocarFichaVisual(indice, color) {
     requestAnimationFrame(() => {
         ficha.style.transform = 'translate(-50%, -50%) scale(1)';
 
-        ficha.addEventListener('transitionend', () => {
+        const finalizarAnimacion = () => {
             if (!ficha.isConnected) return;
 
             ficha.style.transform  = '';
@@ -180,13 +180,30 @@ function colocarFichaVisual(indice, color) {
 
             ficha.classList.add('ultima-colocada');
             ultimaFichaColocadaEl = ficha;
+            
+            // Forzar reflow para asegurar que el navegador móvil repinte el efecto
+            void ficha.offsetWidth;
 
             timerUltimaColocada = setTimeout(() => {
                 ficha.classList.remove('ultima-colocada');
                 if (ultimaFichaColocadaEl === ficha) ultimaFichaColocadaEl = null;
                 timerUltimaColocada = null;
             }, 5000);
+        };
+
+        // Usar transitionend, pero con un setTimeout de respaldo por si falla en móviles
+        let animacionTerminada = false;
+        ficha.addEventListener('transitionend', () => {
+            if (animacionTerminada) return;
+            animacionTerminada = true;
+            finalizarAnimacion();
         }, { once: true });
+
+        setTimeout(() => {
+            if (animacionTerminada) return;
+            animacionTerminada = true;
+            finalizarAnimacion();
+        }, 350); // 300ms de la transición + 50ms de margen
     });
 }
 
