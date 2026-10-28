@@ -582,14 +582,14 @@ window.intentarDescartarCartaMuerta = intentarDescartarCartaMuerta;
 // ============================================
 function verificarSequence(colorJugador) {
     const casillas = getCasillas();
-
     const esDelJugador = (indice) => {
         const c = casillas[indice];
         return c.querySelector(`.ficha-${colorJugador}`) !== null || mapaCartas[indice] === "LIBRE";
     };
-
+    
     const combosACandidatos = [];
-
+    
+    // Horizontales
     for (let f = 0; f < TAMANO_TABLERO; f++) {
         for (let c = 0; c <= TAMANO_TABLERO - 5; c++) {
             const combo = [];
@@ -597,6 +597,7 @@ function verificarSequence(colorJugador) {
             combosACandidatos.push(combo);
         }
     }
+    // Verticales
     for (let c = 0; c < TAMANO_TABLERO; c++) {
         for (let f = 0; f <= TAMANO_TABLERO - 5; f++) {
             const combo = [];
@@ -604,6 +605,7 @@ function verificarSequence(colorJugador) {
             combosACandidatos.push(combo);
         }
     }
+    // Diagonales \
     for (let f = 0; f <= TAMANO_TABLERO - 5; f++) {
         for (let c = 0; c <= TAMANO_TABLERO - 5; c++) {
             const combo = [];
@@ -611,6 +613,7 @@ function verificarSequence(colorJugador) {
             combosACandidatos.push(combo);
         }
     }
+    // Diagonales /
     for (let f = 0; f <= TAMANO_TABLERO - 5; f++) {
         for (let c = 4; c < TAMANO_TABLERO; c++) {
             const combo = [];
@@ -618,6 +621,14 @@ function verificarSequence(colorJugador) {
             combosACandidatos.push(combo);
         }
     }
+
+    // Dar prioridad a los combos que tocan las esquinas
+    const esquinas = [0, 9, 90, 99];
+    combosACandidatos.sort((a, b) => {
+        const aTieneEsquina = a.some(idx => esquinas.includes(idx)) ? 1 : 0;
+        const bTieneEsquina = b.some(idx => esquinas.includes(idx)) ? 1 : 0;
+        return bTieneEsquina - aTieneEsquina; // Las que tienen esquina (1) van antes que las que no (0)
+    });
 
     for (const combo of combosACandidatos) {
         if (combo.every(esDelJugador)) {
